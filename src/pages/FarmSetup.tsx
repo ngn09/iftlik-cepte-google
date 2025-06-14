@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,9 @@ const FarmSetup = () => {
 
         const { data: farmData, error: farmError } = await supabase
             .from('farms')
-            .insert({ name: farmName }) // owner_id kaldırıldı, veritabanı tetikleyicisi halledecek.
+            // Veritabanı türleri henüz güncellenmediği için 'as any' kullanarak tip kontrolünü atlıyoruz.
+            // Veritabanı, 'owner_id'yi varsayılan değerle doğru şekilde atayacaktır.
+            .insert({ name: farmName } as any)
             .select()
             .single();
 
