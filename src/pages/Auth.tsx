@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +48,7 @@ const Auth = () => {
                 data: {
                     full_name: fullName,
                 },
+                emailRedirectTo: `${window.location.origin}/`,
             },
         });
 
