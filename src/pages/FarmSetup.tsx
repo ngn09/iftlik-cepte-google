@@ -17,13 +17,24 @@ const FarmSetup = () => {
 
     const handleCreateFarm = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Çiftlik oluşturuluyor, mevcut kullanıcı:", user);
-        if (!farmName.trim() || !user) return;
+        console.log("Çiftlik oluşturma isteği, mevcut kullanıcı (useAuth):", user);
+        if (!farmName.trim()) return;
 
         setLoading(true);
+
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !currentUser) {
+            toast({ variant: "destructive", title: "Hata", description: "Kullanıcı oturumu doğrulanamadı. Lütfen tekrar giriş yapın." });
+            setLoading(false);
+            return;
+        }
+        
+        console.log("İşlem için kullanıcı doğrulaması (supabase.auth.getUser):", currentUser);
+
         const { data: farmData, error: farmError } = await supabase
             .from('farms')
-            .insert({ name: farmName, owner_id: user.id })
+            .insert({ name: farmName, owner_id: currentUser.id })
             .select()
             .single();
 
@@ -36,7 +47,7 @@ const FarmSetup = () => {
         const { error: profileError } = await supabase
             .from('profiles')
             .update({ farm_id: farmData.id })
-            .eq('id', user.id);
+            .eq('id', currentUser.id);
 
         if (profileError) {
             toast({ variant: "destructive", title: "Hata", description: `Profil güncellenemedi: ${profileError.message}` });
@@ -49,9 +60,18 @@ const FarmSetup = () => {
 
     const handleJoinFarm = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!farmId.trim() || !user) return;
+        if (!farmId.trim()) return;
 
         setLoading(true);
+        
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !currentUser) {
+            toast({ variant: "destructive", title: "Hata", description: "Kullanıcı oturumu doğrulanamadı. Lütfen tekrar giriş yapın." });
+            setLoading(false);
+            return;
+        }
+
         const { data: farmData, error: farmError } = await supabase
             .from('farms')
             .select('id')
@@ -67,7 +87,7 @@ const FarmSetup = () => {
         const { error: profileError } = await supabase
             .from('profiles')
             .update({ farm_id: farmData.id })
-            .eq('id', user.id);
+            .eq('id', currentUser.id);
 
         if (profileError) {
             toast({ variant: "destructive", title: "Hata", description: `Gruba katılırken hata: ${profileError.message}` });
