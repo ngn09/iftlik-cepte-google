@@ -1,8 +1,13 @@
+
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PawPrint, Plus, FileText, Filter, Archive } from "lucide-react";
+import { PawPrint, Plus, FileText, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnimalTable } from "@/components/AnimalTable";
+import { parseISO, format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 const mockAnimals = [
   {
@@ -11,6 +16,7 @@ const mockAnimals = [
     breed: 'Holstein',
     status: 'Aktif',
     lastUpdated: '2025-06-14',
+    dateOfBirth: '2022-03-15',
   },
   {
     id: 'TR-35012',
@@ -18,6 +24,7 @@ const mockAnimals = [
     breed: 'Merinos',
     status: 'Aktif',
     lastUpdated: '2025-06-12',
+    dateOfBirth: '2023-01-20',
   },
   {
     id: 'TR-06055',
@@ -25,6 +32,7 @@ const mockAnimals = [
     breed: 'Angus',
     status: 'Satıldı',
     lastUpdated: '2025-05-28',
+    dateOfBirth: '2021-08-10',
   },
     {
     id: 'TR-16089',
@@ -32,11 +40,31 @@ const mockAnimals = [
     breed: 'Akkaraman',
     status: 'Arşivlendi',
     lastUpdated: '2025-04-10',
+    dateOfBirth: '2020-05-01',
   },
 ];
 
 
 const Animals = () => {
+  const [filter, setFilter] = useState('');
+
+  const getLatestUpdateDate = () => {
+    if (mockAnimals.length === 0) return new Date();
+    const dates = mockAnimals.map(a => parseISO(a.lastUpdated));
+    return new Date(Math.max.apply(null, dates as any));
+  };
+
+  const latestUpdateDate = getLatestUpdateDate();
+
+  const filteredAnimals = mockAnimals.filter(animal => 
+    animal.id.toLowerCase().includes(filter.toLowerCase()) ||
+    animal.breed.toLowerCase().includes(filter.toLowerCase()) ||
+    animal.species.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const activeAnimals = filteredAnimals.filter(a => a.status !== 'Arşivlendi');
+  const archivedAnimals = filteredAnimals.filter(a => a.status === 'Arşivlendi');
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -95,44 +123,37 @@ const Animals = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Hayvan Listesi</CardTitle>
+            <CardTitle className="flex items-baseline">
+              Hayvan Listesi
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                (Son Güncelleme: {format(latestUpdateDate, 'dd MMMM yyyy', { locale: tr })})
+              </span>
+            </CardTitle>
             <CardDescription>Çiftliğinizdeki hayvanları yönetin.</CardDescription>
           </div>
           <div className="relative w-full max-w-sm">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Hayvanları filtrele (örn: Holstein, TR-34001)" className="pl-10" />
+            <Input 
+              placeholder="Hayvanları filtrele (örn: Holstein, TR-34001)" 
+              className="pl-10"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
           </div>
         </CardHeader>
         <CardContent>
-           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Küpe No</TableHead>
-                <TableHead>Tür</TableHead>
-                <TableHead>Cins</TableHead>
-                <TableHead>Durum</TableHead>
-                <TableHead>Son Güncelleme</TableHead>
-                <TableHead className="text-right">İşlemler</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockAnimals.map((animal) => (
-                <TableRow key={animal.id}>
-                  <TableCell className="font-medium">{animal.id}</TableCell>
-                  <TableCell>{animal.species}</TableCell>
-                  <TableCell>{animal.breed}</TableCell>
-                  <TableCell>{animal.status}</TableCell>
-                  <TableCell>{animal.lastUpdated}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <Archive className="h-4 w-4" />
-                      <span className="sr-only">Arşivle</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+           <Tabs defaultValue="active">
+            <TabsList className="grid w-full grid-cols-2 md:w-1/3">
+              <TabsTrigger value="active">Aktif ({activeAnimals.length})</TabsTrigger>
+              <TabsTrigger value="archived">Arşiv ({archivedAnimals.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="active" className="mt-4">
+              <AnimalTable animals={activeAnimals} />
+            </TabsContent>
+            <TabsContent value="archived" className="mt-4">
+              <AnimalTable animals={archivedAnimals} />
+            </TabsContent>
+           </Tabs>
         </CardContent>
       </Card>
     </div>
