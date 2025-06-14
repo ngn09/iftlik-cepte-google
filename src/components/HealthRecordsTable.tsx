@@ -24,6 +24,7 @@ const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, i
               <TableHead>Küpe No</TableHead>
               <TableHead>Tarih</TableHead>
               <TableHead>Teşhis</TableHead>
+              <TableHead className="text-center">Görsel</TableHead>
               <TableHead>Durum</TableHead>
               <TableHead>Veteriner</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
@@ -35,19 +36,17 @@ const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, i
                 <TableRow key={record.id}>
                   <TableCell className="font-medium">{record.animalTag}</TableCell>
                   <TableCell>{new Date(record.date).toLocaleDateString('tr-TR')}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                        {record.diagnosis}
-                        {record.mediaUrls && record.mediaUrls.length > 0 && (
-                            <button onClick={() => onViewMedia(record.mediaUrls!)} className="p-1 rounded-md hover:bg-muted">
-                                {record.mediaUrls.some(url => /\.(mp4|webm|ogg)$/i.test(url)) ? (
-                                    <Camera className="h-4 w-4 text-muted-foreground" />
-                                ) : (
-                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                )}
-                            </button>
-                        )}
-                    </div>
+                  <TableCell>{record.diagnosis}</TableCell>
+                  <TableCell className="text-center">
+                    {record.mediaUrls && record.mediaUrls.length > 0 && (
+                        <button onClick={() => onViewMedia(record.mediaUrls!)} className="p-1 rounded-md hover:bg-muted">
+                            {record.mediaUrls.some(url => /\.(mp4|webm|ogg)$/i.test(url)) ? (
+                                <Camera className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                            )}
+                        </button>
+                    )}
                   </TableCell>
                   <TableCell>
                     {record.outcome && (
@@ -95,7 +94,7 @@ const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, i
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   {isArchive ? "Arşivde kayıt bulunamadı." : "Aktif kayıt bulunamadı."}
                 </TableCell>
               </TableRow>
