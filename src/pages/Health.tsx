@@ -1,7 +1,6 @@
-
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { HeartPulse, AlertCircle, Calendar, Plus, Archive, Image as ImageIcon, CheckCircle, Skull, Video } from "lucide-react";
+import { HeartPulse, AlertCircle, Calendar, Plus, Archive, CheckCircle, Skull } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HealthRecord, healthRecordsData } from '@/data/health';
@@ -27,10 +26,6 @@ const Health = () => {
   const treatedRecords = records.filter(r => r.outcome === 'İyileşti');
   const deceasedRecords = records.filter(r => r.outcome === 'Öldü');
   const urgentRecords = activeRecords.filter(r => r.outcome === 'Tedavi Altında');
-
-  const allMedia = records
-    .flatMap(r => r.mediaUrls?.map(url => ({ recordId: r.id, url, animalTag: r.animalTag, date: r.date })) || [])
-    .filter(media => media.url);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -198,9 +193,6 @@ const Health = () => {
               <TabsTrigger value="archive">
                 <Archive className="mr-2 h-4 w-4" /> Arşiv
               </TabsTrigger>
-              <TabsTrigger value="gallery">
-                <ImageIcon className="mr-2 h-4 w-4" /> Görseller
-              </TabsTrigger>
             </TabsList>
             <Button onClick={handleAddNew}>
                 <Plus className="mr-2 h-4 w-4" /> Yeni Muayene Ekle
@@ -212,39 +204,9 @@ const Health = () => {
         <TabsContent value="archive">
             <HealthRecordsTable records={archivedRecords} onEdit={handleEdit} onArchive={handleArchive} onRestore={handleRestore} onDelete={handleDelete} isArchive={true} onViewMedia={handleViewMedia} />
         </TabsContent>
-        <TabsContent value="gallery">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {allMedia.length > 0 ? allMedia.map((media) => {
-                    const isVideo = /\.(mp4|webm|ogg)$/i.test(media.url);
-                    return (
-                        <div key={media.url + media.recordId} className="relative group cursor-pointer" onClick={() => handleViewMedia([media.url])}>
-                            {isVideo ? (
-                                <div className="relative w-full h-full">
-                                    <video src={media.url} className="rounded-lg object-cover aspect-square w-full bg-black"/>
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                        <Video className="h-12 w-12 text-white/80" />
-                                    </div>
-                                </div>
-                            ) : (
-                                <img src={media.url} alt={`Sağlık kaydı görseli`} className="rounded-lg object-cover aspect-square w-full"/>
-                            )}
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-xs rounded-b-lg">
-                                <p className="font-bold">{media.animalTag}</p>
-                                <p>{new Date(media.date).toLocaleDateString('tr-TR')}</p>
-                            </div>
-                        </div>
-                    )
-                }) : (
-                    <div className="col-span-full text-center py-8 text-muted-foreground">
-                        Görüntülenecek medya bulunamadı.
-                    </div>
-                )}
-            </div>
-        </TabsContent>
       </Tabs>
     </div>
   );
 };
 
 export default Health;
-
