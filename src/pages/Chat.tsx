@@ -12,6 +12,13 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface Message {
@@ -20,6 +27,7 @@ interface Message {
   time: string;
   avatar: string;
   avatarBg: string;
+  recipient?: string; // Herkese açık için undefined, özel için kullanıcı adı
 }
 
 interface ArchivedChat {
@@ -44,11 +52,15 @@ const initialMessages: Message[] = [
   },
 ];
 
+const activeUsers = ['Yönetici', 'Veteriner Dr. Ahmet', 'Bakıcı Mehmet', 'Bakıcı Ayşe', 'Veteriner Dr. Zeynep'];
+
 const Chat = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [newMessage, setNewMessage] = useState("");
   const [archivedChats, setArchivedChats] = useState<ArchivedChat[]>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [messageScope, setMessageScope] = useState('public'); // 'public' veya 'private'
+  const [privateRecipient, setPrivateRecipient] = useState('');
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -60,16 +72,25 @@ const Chat = () => {
     e.preventDefault();
     if (newMessage.trim() === '') return;
 
+    if (messageScope === 'private' && !privateRecipient) {
+      toast.error("Lütfen özel mesaj için bir alıcı seçin.");
+      return;
+    }
+
     const newMsg: Message = {
       user: 'Siz',
       text: newMessage,
       time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
       avatar: 'S',
       avatarBg: 'bg-purple-500',
+      recipient: messageScope === 'private' ? privateRecipient : undefined,
     };
 
     setMessages([...messages, newMsg]);
     setNewMessage('');
+    if (messageScope === 'private') {
+      setPrivateRecipient('');
+    }
   };
 
   const handleArchiveChat = () => {
@@ -157,7 +178,7 @@ const Chat = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {['Yönetici', 'Veteriner Dr. Ahmet', 'Bakıcı Mehmet', 'Bakıcı Ayşe', 'Veteriner Dr. Zeynep'].map((user, index) => (
+              {activeUsers.map((user, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-sm">{user}</span>
@@ -184,26 +205,58 @@ const Chat = () => {
                       {msg.avatar}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{msg.user}</p>
+                      <p className="text-sm font-medium">
+                        {msg.user}
+                        {msg.recipient && <span className="text-muted-foreground font-normal"> -> {msg.recipient}</span>}
+                      </p>
                       <p className="text-sm text-gray-600 break-words">{msg.text}</p>
-                      <p className="text-xs text-gray-400 mt-1">{msg.time}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {msg.time}
+                        {msg.recipient && <span className="ml-2 text-yellow-600 text-xs font-semibold">[Özel Mesaj]</span>}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
             
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
-                type="text" 
-                placeholder="Mesajınızı yazın..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                autoComplete="off"
-              />
-              <Button type="submit" size="icon">
-                <Send className="h-4 w-4" />
-              </Button>
+            <form onSubmit={handleSendMessage} className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Input
+                  type="text" 
+                  placeholder="Mesajınızı yazın..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  autoComplete="off"
+                  className="flex-grow"
+                />
+                <Button type="submit" size="icon">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex gap-2 items-center">
+                <Select value={messageScope} onValueChange={setMessageScope}>
+                  <SelectTrigger className="w-auto flex-grow sm:flex-grow-0 sm:w-[150px]">
+                    <SelectValue placeholder="Gönderim türü" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Herkese</SelectItem>
+                    <SelectItem value="private">Özel Mesaj</SelectItem>
+                  </SelectContent>
+                </Select>
+                {messageScope === 'private' && (
+                  <Select value={privateRecipient} onValueChange={setPrivateRecipient}>
+                    <SelectTrigger className="w-auto flex-grow sm:flex-grow-0 sm:w-[200px]">
+                      <SelectValue placeholder="Alıcı seçin..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeUsers.map(user => (
+                        <SelectItem key={user} value={user}>{user}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </form>
           </CardContent>
         </Card>
