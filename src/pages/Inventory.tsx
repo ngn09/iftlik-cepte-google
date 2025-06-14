@@ -1,61 +1,110 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Warehouse, AlertTriangle, Plus } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+
+const fixedAssets = [
+  {
+    id: 1,
+    name: 'John Deere 5050E Traktör',
+    category: 'Araç',
+    purchaseDate: '20.05.2021',
+    value: 1250000,
+    status: 'Aktif',
+  },
+  {
+    id: 2,
+    name: 'Süt Sağım Makinesi (2x4)',
+    category: 'Ekipman',
+    purchaseDate: '15.01.2022',
+    value: 180000,
+    status: 'Aktif',
+  },
+  {
+    id: 3,
+    name: 'Tarla Pülverizatörü',
+    category: 'Ekipman',
+    purchaseDate: '10.03.2023',
+    value: 95000,
+    status: 'Aktif',
+  },
+  {
+    id: 4,
+    name: 'Ford Transit Kamyonet',
+    category: 'Araç',
+    purchaseDate: '02.09.2019',
+    value: 780000,
+    status: 'Bakımda',
+  },
+  {
+    id: 5,
+    name: 'Otomatik Yem Karma Makinesi',
+    category: 'Ekipman',
+    purchaseDate: '25.11.2023',
+    value: 230000,
+    status: 'Arızalı',
+  },
+];
+
 
 const Inventory = () => {
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Aktif':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'Bakımda':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'Arızalı':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Envanter</h1>
-        <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90">
-          <Plus className="h-4 w-4" />
-          Yeni Ürün Ekle
-        </button>
-      </div>
-      
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Yem (Ton)</CardTitle>
-            <Warehouse className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">34.5</div>
-            <p className="text-xs text-muted-foreground">Hedefin %85'i</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Düşük Stok</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-500">5</div>
-            <p className="text-xs text-muted-foreground">Ürün kritik seviyede</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aylık Tüketim</CardTitle>
-            <Warehouse className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12.8 Ton</div>
-            <p className="text-xs text-muted-foreground">Ortalama tüketim</p>
-          </CardContent>
-        </Card>
+        <h1 className="text-3xl font-bold">Demirbaş Yönetimi</h1>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Yeni Demirbaş Ekle
+        </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Stok Durumu</CardTitle>
+          <CardTitle>Demirbaş Listesi</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            Detaylı stok listesi yakında burada görüntülenecek
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Demirbaş Adı</TableHead>
+                <TableHead>Kategori</TableHead>
+                <TableHead>Alım Tarihi</TableHead>
+                <TableHead className="text-right">Mevcut Değeri (₺)</TableHead>
+                <TableHead>Durum</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fixedAssets.map((asset) => (
+                <TableRow key={asset.id}>
+                  <TableCell className="font-medium">{asset.name}</TableCell>
+                  <TableCell>{asset.category}</TableCell>
+                  <TableCell>{asset.purchaseDate}</TableCell>
+                  <TableCell className="text-right">{asset.value.toLocaleString('tr-TR')}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(asset.status)}`}
+                    >
+                      {asset.status}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
@@ -63,3 +112,4 @@ const Inventory = () => {
 };
 
 export default Inventory;
+
