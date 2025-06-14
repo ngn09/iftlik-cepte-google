@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Copy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { ManageUserDialog } from "@/components/ManageUserDialog";
@@ -8,16 +7,31 @@ import { useUsers } from "@/hooks/useUsers";
 import { UserTable } from "@/components/UserTable";
 import { DeleteUserDialog } from "@/components/DeleteUserDialog";
 import type { User } from "@/types/user";
+import { useAuth } from "@/auth/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Users = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const { profile } = useAuth();
+  const { toast } = useToast();
 
   const currentUserRole = 'Yönetici';
   const isAdmin = currentUserRole === 'Yönetici';
 
   const { users, isLoading, isError, error, deleteUser, isDeleting } = useUsers();
+
+  const handleCopyToClipboard = () => {
+    if (profile?.farm_id) {
+      navigator.clipboard.writeText(profile.farm_id);
+      toast({
+        title: "Kopyalandı!",
+        description: "Grup ID'si panoya kopyalandı.",
+      });
+    }
+  };
 
   const handleAddNewUser = () => {
     setUserToEdit(null);
@@ -73,6 +87,27 @@ const Users = () => {
           )
         )}
       </div>
+
+      {profile?.farm_id && isAdmin && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Ekibinizi Davet Edin</CardTitle>
+            <CardDescription>
+              Ekip arkadaşlarınızı çiftliğinize davet etmek için aşağıdaki Grup ID'sini paylaşın. Onlar bu ID'yi kullanarak gruba katılabilirler.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-4 p-4 border rounded-lg bg-muted">
+              <p className="text-lg font-mono font-semibold tracking-widest flex-grow">{profile.farm_id}</p>
+              <Button variant="outline" size="icon" onClick={handleCopyToClipboard}>
+                <Copy className="h-4 w-4" />
+                <span className="sr-only">Kopyala</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <UserTable 
         users={users} 
         isLoading={isLoading} 
