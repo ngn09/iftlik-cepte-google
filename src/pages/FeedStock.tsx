@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { feedStock as initialFeedStock, FeedItem } from "@/data/feedStock";
 import { animalGroups, rations as initialRations, Ration } from "@/data/rations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -94,6 +94,46 @@ const FeedStock = () => {
     setIsAddStockDialogOpen(false);
   };
 
+  const handleExportData = () => {
+    const headers = [
+      "ID",
+      "Yem Adı",
+      "Türü",
+      "Stok Miktarı",
+      "Birim",
+      "Tedarikçi",
+      "Son Güncelleme",
+    ];
+    const csvRows = [headers.join(',')];
+
+    feedStockItems.forEach(item => {
+      const row = [
+        item.id,
+        `"${item.name.replace(/"/g, '""')}"`,
+        item.type,
+        item.stockAmount,
+        item.unit,
+        `"${item.supplier.replace(/"/g, '""')}"`,
+        item.lastUpdated
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "yem-stok-arsivi.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
@@ -108,11 +148,20 @@ const FeedStock = () => {
         <TabsContent value="stock-list">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Yem Stok Listesi</CardTitle>
-              <Button onClick={() => handleOpenFeedItemDialog(null)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Yeni Yem Ekle
-              </Button>
+              <div>
+                <CardTitle>Yem Stok Listesi</CardTitle>
+                <CardDescription>Mevcut yem stoğunuzu yönetin ve takip edin.</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => handleOpenFeedItemDialog(null)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Yeni Yem Ekle
+                </Button>
+                <Button variant="outline" onClick={handleExportData}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Dışa Aktar
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
