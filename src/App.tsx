@@ -15,6 +15,7 @@ import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
+import FeedStock from "./pages/FeedStock";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/animals" element={<Animals />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/inventory/:id" element={<InventoryItemDetails />} />
+            <Route path="/feed-stock" element={<FeedStock />} />
             <Route path="/health" element={<Health />} />
             <Route path="/cameras" element={<Cameras />} />
             <Route path="/chat" element={<Chat />} />
