@@ -1,10 +1,9 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getSupabase } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { ManageUserDialog } from "@/components/ManageUserDialog";
@@ -28,7 +27,6 @@ export type User = {
 };
 
 const fetchUsers = async (): Promise<User[]> => {
-  const supabase = getSupabase();
   const { data, error } = await supabase
     .from('profiles')
     .select('id, full_name, email, role, status');
@@ -37,7 +35,8 @@ const fetchUsers = async (): Promise<User[]> => {
     console.error("Error fetching users:", error);
     throw new Error(error.message);
   }
-  return data;
+  // Supabase'den gelen null veriyi boş dizi olarak döndür
+  return data || [];
 };
 
 const Users = () => {
@@ -57,7 +56,6 @@ const Users = () => {
 
   const { mutate: deleteUser, isPending: isDeleting } = useMutation({
     mutationFn: async (userId: string) => {
-        const supabase = getSupabase();
         const { error } = await supabase.from('profiles').delete().eq('id', userId);
         if (error) throw new Error(error.message);
     },

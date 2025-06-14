@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getSupabase } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/pages/Users";
 import { useEffect, useState } from "react";
@@ -69,7 +69,6 @@ export function ManageUserDialog({ user, open, onOpenChange }: ManageUserDialogP
   
   const userMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
-        const supabase = getSupabase();
         const { id, ...updateData } = data;
         
         if (id) {
@@ -77,6 +76,9 @@ export function ManageUserDialog({ user, open, onOpenChange }: ManageUserDialogP
             if (error) throw new Error(error.message);
             return { ...updateData, id };
         } else {
+            // Yeni kullanıcı eklerken auth.users tablosuna kayıt yapmamız gerekiyor.
+            // Şimdilik sadece profiles'a ekliyoruz, bu auth olmadan çalışmayacaktır.
+            // Bu kısım auth eklendikten sonra düzenlenmelidir.
             const { data: newUserData, error } = await supabase.from('profiles').insert(updateData).select().single();
             if (error) throw new Error(error.message);
             return newUserData;
