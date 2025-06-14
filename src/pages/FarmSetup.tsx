@@ -17,6 +17,7 @@ const FarmSetup = () => {
 
     const handleCreateFarm = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log("Çiftlik oluşturuluyor, mevcut kullanıcı:", user);
         if (!farmName.trim() || !user) return;
 
         setLoading(true);
