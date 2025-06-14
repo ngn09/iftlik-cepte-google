@@ -12,6 +12,7 @@ import Health from "./pages/Health";
 import Cameras from "./pages/Cameras";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/health" element={<Health />} />
             <Route path="/cameras" element={<Cameras />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/users" element={<Users />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />

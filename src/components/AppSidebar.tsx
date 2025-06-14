@@ -1,7 +1,7 @@
 
 import { NavLink } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar";
-import { LayoutDashboard, PawPrint, Warehouse, HeartPulse, Video, MessageSquare, Settings } from "lucide-react";
+import { LayoutDashboard, PawPrint, Warehouse, HeartPulse, Video, MessageSquare, Settings, Users } from "lucide-react";
 
 const AppSidebar = () => {
   const menuItems = [
@@ -11,6 +11,7 @@ const AppSidebar = () => {
     { to: "/health", icon: HeartPulse, label: "Sağlık" },
     { to: "/cameras", icon: Video, label: "Kameralar" },
     { to: "/chat", icon: MessageSquare, label: "Sohbet" },
+    { to: "/users", icon: Users, label: "Kullanıcılar" },
   ];
 
   const getNavLinkClass = ({ isActive }: { isActive: boolean }) =>
