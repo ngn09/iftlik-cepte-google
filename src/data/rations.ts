@@ -1,0 +1,52 @@
+
+import { FeedItem } from "./feedStock";
+
+export interface AnimalGroup {
+  id: number;
+  name: string;
+}
+
+export interface RationItem {
+  feedStockId: number;
+  amount: number;
+}
+
+export interface Ration {
+  id: number;
+  animalGroupId: number;
+  name:string;
+  items: RationItem[];
+}
+
+export const animalGroups: AnimalGroup[] = [
+  { id: 1, name: 'Sağmal İnekler (Yüksek Verim)' },
+  { id: 2, name: 'Sağmal İnekler (Orta Verim)' },
+  { id: 3, name: 'Kuru Dönem İnekler' },
+  { id: 4, name: 'Düveler (6-12 Ay)' },
+  { id: 5, name: 'Buzağılar (0-3 Ay)' },
+];
+
+export const rations: Ration[] = [
+  {
+    id: 1,
+    animalGroupId: 1,
+    name: 'Yüksek Verim Rasyonu',
+    items: [
+      { feedStockId: 1, amount: 20 }, // Mısır Silajı
+      { feedStockId: 2, amount: 8 },  // Süt Yemi
+      { feedStockId: 3, amount: 4 },  // Arpa Ezmesi
+      { feedStockId: 4, amount: 5 },  // Yonca Kuru Otu
+      { feedStockId: 5, amount: 0.15 },// Mineral Tozu
+    ],
+  },
+  {
+    id: 2,
+    animalGroupId: 3,
+    name: 'Kuru Dönem Rasyonu',
+    items: [
+      { feedStockId: 1, amount: 15 }, // Mısır Silajı
+      { feedStockId: 4, amount: 7 },  // Yonca Kuru Otu
+      { feedStockId: 5, amount: 0.1 }, // Mineral Tozu
+    ],
+  },
+];

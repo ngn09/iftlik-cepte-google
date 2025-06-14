@@ -1,12 +1,36 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
 import { feedStock } from "@/data/feedStock";
+import { animalGroups, rations as initialRations, Ration } from "@/data/rations";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CreateRationDialog } from "@/components/CreateRationDialog";
 
 const FeedStock = () => {
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(animalGroups[0]?.id.toString());
+  const [rations, setRations] = useState<Ration[]>(initialRations);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  const filteredRations = selectedGroupId
+    ? rations.filter((r) => r.animalGroupId === parseInt(selectedGroupId, 10))
+    : [];
+  
+  const handleCreateRation = (data: any) => {
+    const newRation: Ration = {
+      id: Date.now(),
+      name: data.name,
+      animalGroupId: parseInt(data.animalGroupId, 10),
+      items: data.items.map((item: any) => ({
+        feedStockId: parseInt(item.feedStockId, 10),
+        amount: item.amount,
+      })),
+    };
+    setRations(prevRations => [...prevRations, newRation]);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
@@ -56,23 +80,85 @@ const FeedStock = () => {
         <TabsContent value="ration-planning">
            <Card>
             <CardHeader>
-              <CardTitle>Rasyon Planlama</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center h-96 gap-4 text-center">
-                <h3 className="text-xl font-semibold">Rasyon Planlama Özelliği Yakında!</h3>
-                <p className="text-muted-foreground max-w-md">
-                  Burada hayvan gruplarınıza göre yem rasyonları oluşturabilecek, hayvan sayınıza göre toplam yem ihtiyacını hesaplayabilecek ve stok durumunuzu bu plana göre otomatik veya manuel olarak yönetebileceksiniz.
-                </p>
-                <div className="flex gap-4 mt-4">
-                  <Button variant="outline" disabled>Manuel Mod</Button>
-                  <Button variant="outline" disabled>Otomatik Mod</Button>
+              <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                  <CardTitle>Rasyon Planlama</CardTitle>
+                  <CardDescription>Hayvan gruplarınıza göre rasyonları yönetin.</CardDescription>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                    <SelectTrigger className="w-full md:w-[280px]">
+                      <SelectValue placeholder="Hayvan Grubu Seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {animalGroups.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Rasyon Oluştur
+                  </Button>
                 </div>
               </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {filteredRations.length > 0 ? (
+                filteredRations.map((ration) => (
+                  <Card key={ration.id} className="w-full">
+                    <CardHeader>
+                      <CardTitle>{ration.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Yem Adı</TableHead>
+                            <TableHead className="text-right">Miktar (kg/gün)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {ration.items.map((item, index) => {
+                            const feedInfo = feedStock.find(f => f.id === item.feedStockId);
+                            return (
+                              <TableRow key={index}>
+                                <TableCell className="font-medium">{feedInfo ? feedInfo.name : 'Bilinmeyen Yem'}</TableCell>
+                                <TableCell className="text-right">{item.amount}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-64 gap-2 text-center border-2 border-dashed rounded-lg">
+                  <h3 className="text-lg font-semibold">Rasyon Bulunamadı</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Seçili grup için henüz bir rasyon oluşturulmamış.
+                  </p>
+                   <Button variant="secondary" className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    İlk Rasyonu Oluştur
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+      <CreateRationDialog
+        isOpen={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSubmit={handleCreateRation}
+        animalGroups={animalGroups}
+        feedStock={feedStock}
+        defaultGroupId={selectedGroupId}
+      />
     </div>
   );
 };
