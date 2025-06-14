@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Download } from "lucide-react";
 import { feedStock as initialFeedStock, FeedItem } from "@/data/feedStock";
 import { animalGroups, rations as initialRations, Ration } from "@/data/rations";
@@ -211,9 +211,10 @@ const FeedStock = () => {
                   <CardTitle>Rasyon Planlama</CardTitle>
                   <CardDescription>Hayvan gruplarınıza göre rasyonları yönetin.</CardDescription>
                   {selectedGroup && (
-                    <p className="text-sm text-muted-foreground pt-1">
-                      Bu gruptaki hayvan sayısı: <strong>{selectedGroup.animalCount}</strong>
-                    </p>
+                    <div className="flex items-center gap-2 pt-2">
+                      <span className="text-sm font-medium text-muted-foreground">Bu gruptaki hayvan sayısı:</span>
+                      <Badge variant="secondary" className="text-base font-bold">{selectedGroup.animalCount}</Badge>
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-4">
