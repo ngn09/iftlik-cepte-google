@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +9,7 @@ import { animalGroups, rations as initialRations, Ration } from "@/data/rations"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateRationDialog } from "@/components/CreateRationDialog";
 import { FeedItemDialog } from "@/components/FeedItemDialog";
+import { AddStockEntryDialog } from "@/components/AddStockEntryDialog";
 
 const FeedStock = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(animalGroups[0]?.id.toString());
@@ -17,6 +17,7 @@ const FeedStock = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [feedStockItems, setFeedStockItems] = useState<FeedItem[]>(initialFeedStock);
   const [isFeedItemDialogOpen, setIsFeedItemDialogOpen] = useState(false);
+  const [isAddStockDialogOpen, setIsAddStockDialogOpen] = useState(false);
   const [editingFeedItem, setEditingFeedItem] = useState<FeedItem | null>(null);
 
   const filteredRations = selectedGroupId
@@ -41,6 +42,11 @@ const FeedStock = () => {
     setIsFeedItemDialogOpen(true);
   };
 
+  const handleOpenAddStockDialog = (item: FeedItem) => {
+    setEditingFeedItem(item);
+    setIsAddStockDialogOpen(true);
+  };
+
   const handleSaveFeedItem = (data: Omit<FeedItem, 'id' | 'lastUpdated'>) => {
     const today = new Date().toLocaleDateString('tr-TR');
     if (editingFeedItem) {
@@ -60,6 +66,32 @@ const FeedStock = () => {
       setFeedStockItems(currentItems => [...currentItems, newItem]);
     }
     setIsFeedItemDialogOpen(false);
+  };
+
+  const handleSaveStockEntry = (data: { amountToAdd: number; supplier: string; document?: File }) => {
+    if (!editingFeedItem) return;
+
+    const today = new Date().toLocaleDateString('tr-TR');
+    
+    if (data.document) {
+      console.log(`Uploading document for ${editingFeedItem.name}: ${data.document.name}`);
+      // Gerçek bir uygulamada, dosya burada bir depolama hizmetine yüklenir.
+    }
+
+    setFeedStockItems(currentItems =>
+      currentItems.map(item =>
+        item.id === editingFeedItem.id
+          ? {
+              ...item,
+              stockAmount: item.stockAmount + data.amountToAdd,
+              supplier: data.supplier,
+              lastUpdated: today,
+            }
+          : item
+      )
+    );
+
+    setIsAddStockDialogOpen(false);
   };
 
   return (
@@ -91,16 +123,27 @@ const FeedStock = () => {
                     <TableHead>Stok Miktarı</TableHead>
                     <TableHead>Tedarikçi</TableHead>
                     <TableHead>Son Güncelleme</TableHead>
+                    <TableHead className="text-right">İşlemler</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {feedStockItems.map((item) => (
-                    <TableRow key={item.id} className="cursor-pointer" onClick={() => handleOpenFeedItemDialog(item)}>
+                    <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>{item.type}</TableCell>
                       <TableCell>{`${item.stockAmount} ${item.unit}`}</TableCell>
                       <TableCell>{item.supplier}</TableCell>
                       <TableCell>{item.lastUpdated}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleOpenFeedItemDialog(item)}>
+                            Düzenle
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleOpenAddStockDialog(item)}>
+                            Giriş Yap
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -195,6 +238,12 @@ const FeedStock = () => {
         onOpenChange={setIsFeedItemDialogOpen}
         onSubmit={handleSaveFeedItem}
         initialData={editingFeedItem}
+      />
+      <AddStockEntryDialog
+        isOpen={isAddStockDialogOpen}
+        onOpenChange={setIsAddStockDialogOpen}
+        onSubmit={handleSaveStockEntry}
+        feedItem={editingFeedItem}
       />
     </div>
   );
