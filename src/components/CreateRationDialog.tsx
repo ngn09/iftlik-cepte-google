@@ -49,9 +49,10 @@ interface CreateRationDialogProps {
   feedStock: FeedItem[];
   defaultGroupId?: string;
   initialData?: Ration | null;
+  onUpdateAnimalCount: (groupId: number, count: number) => void;
 }
 
-export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroups, feedStock, defaultGroupId, initialData }: CreateRationDialogProps) {
+export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroups, feedStock, defaultGroupId, initialData, onUpdateAnimalCount }: CreateRationDialogProps) {
   const isEditMode = !!initialData;
 
   const form = useForm<RationFormValues>({
@@ -66,6 +67,22 @@ export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroup
     control: form.control,
     name: "items",
   });
+  
+  const selectedAnimalGroupId = form.watch("animalGroupId");
+  const selectedAnimalGroup = React.useMemo(() => {
+      if (!selectedAnimalGroupId) return null;
+      return animalGroups.find(g => g.id.toString() === selectedAnimalGroupId);
+  }, [selectedAnimalGroupId, animalGroups]);
+
+  const [currentAnimalCount, setCurrentAnimalCount] = React.useState<string>("");
+
+  React.useEffect(() => {
+      if (selectedAnimalGroup) {
+          setCurrentAnimalCount(selectedAnimalGroup.animalCount.toString());
+      } else {
+          setCurrentAnimalCount("");
+      }
+  }, [selectedAnimalGroup]);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -91,6 +108,15 @@ export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroup
   const handleFormSubmit = (data: RationFormValues) => {
     onSubmit(data);
     onOpenChange(false);
+  };
+
+  const handleAnimalCountUpdate = () => {
+    if (selectedAnimalGroup && currentAnimalCount !== "") {
+        const newCount = parseInt(currentAnimalCount, 10);
+        if (!isNaN(newCount) && newCount > 0) {
+            onUpdateAnimalCount(selectedAnimalGroup.id, newCount);
+        }
+    }
   };
 
   return (
@@ -144,54 +170,83 @@ export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroup
                   </FormItem>
                 )}
               />
+              {selectedAnimalGroup && (
+                  <div className="flex items-end gap-4">
+                      <FormItem>
+                          <FormLabel>Hayvan Sayısı</FormLabel>
+                          <FormControl>
+                              <Input
+                                  type="number"
+                                  value={currentAnimalCount}
+                                  onChange={(e) => setCurrentAnimalCount(e.target.value)}
+                                  className="w-[180px]"
+                              />
+                          </FormControl>
+                      </FormItem>
+                      <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleAnimalCountUpdate}
+                          disabled={!currentAnimalCount || currentAnimalCount === selectedAnimalGroup.animalCount.toString()}
+                      >
+                          Güncelle
+                      </Button>
+                  </div>
+              )}
             </div>
             <Separator />
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Rasyon İçeriği</h3>
-              {fields.map((field, index) => (
-                <div key={field.id} className="flex items-end gap-4">
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.feedStockId`}
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Yem</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+              {fields.map((field, index) => {
+                const feedStockId = form.watch(`items.${index}.feedStockId`);
+                const selectedFeedItem = feedStock.find(item => item.id.toString() === feedStockId);
+                const unit = selectedFeedItem?.unit || 'kg';
+
+                return (
+                  <div key={field.id} className="flex items-end gap-4">
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.feedStockId`}
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Yem</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Bir yem seçin" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {feedStock.map((item) => (
+                                <SelectItem key={item.id} value={item.id.toString()}>
+                                  {item.name} ({item.stockAmount} {item.unit} stokta)
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.amount`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Miktar ({unit})</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Bir yem seçin" />
-                            </SelectTrigger>
+                            <Input type="number" placeholder="Miktar" {...field} />
                           </FormControl>
-                          <SelectContent>
-                            {feedStock.map((item) => (
-                              <SelectItem key={item.id} value={item.id.toString()}>
-                                {item.name} ({item.stockAmount} {item.unit} stokta)
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.amount`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Miktar (kg)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="Miktar" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              })}
                <Button
                   type="button"
                   variant="outline"

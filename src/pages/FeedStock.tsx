@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Download } from "lucide-react";
 import { feedStock as initialFeedStock, FeedItem } from "@/data/feedStock";
-import { animalGroups, rations as initialRations, Ration } from "@/data/rations";
+import { animalGroups as initialAnimalGroups, rations as initialRations, Ration } from "@/data/rations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateRationDialog } from "@/components/CreateRationDialog";
 import { FeedItemDialog } from "@/components/FeedItemDialog";
@@ -16,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
 const FeedStock = () => {
+  const [animalGroups, setAnimalGroups] = useState(initialAnimalGroups);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(animalGroups[0]?.id.toString());
   const [rations, setRations] = useState<Ration[]>(initialRations);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -126,6 +126,14 @@ const FeedStock = () => {
       setEditingRation(null);
     }
     setIsCreateDialogOpen(isOpen);
+  };
+
+  const handleUpdateAnimalCount = (groupId: number, count: number) => {
+    setAnimalGroups(prevGroups =>
+      prevGroups.map(group =>
+        group.id === groupId ? { ...group, animalCount: count } : group
+      )
+    );
   };
 
   const handleOpenFeedItemDialog = (item: FeedItem | null) => {
@@ -393,6 +401,7 @@ const FeedStock = () => {
         feedStock={feedStockItems}
         defaultGroupId={selectedGroupId}
         initialData={editingRation}
+        onUpdateAnimalCount={handleUpdateAnimalCount}
       />
       <FeedItemDialog
         isOpen={isFeedItemDialogOpen}
