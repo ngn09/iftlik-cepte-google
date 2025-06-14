@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -24,9 +23,22 @@ import type { Role } from "@/config/roles";
 
 const userFormSchema = z.object({
   id: z.string().optional(),
-  full_name: z.string().min(2, { message: "Ad en az 2 karakter olmalıdır." }),
+  full_name: z.string().min(2, { message: "Ad soyad en az 2 karakter olmalıdır." }),
   email: z.string().email({ message: "Geçersiz e-posta adresi." }),
   role: z.string().refine(val => Object.keys(ROLES).includes(val), { message: "Geçersiz rol."}),
+  password: z.string().optional(),
+  confirmPassword: z.string().optional(),
+}).refine(data => {
+  if (!data.id) { // New user
+    if (!data.password || data.password.length < 6) {
+        return false;
+    }
+    return data.password === data.confirmPassword;
+  }
+  return true; // Existing user, no password validation needed
+}, {
+  message: "Yeni kullanıcılar için şifreler eşleşmeli ve en az 6 karakter olmalıdır.",
+  path: ["confirmPassword"],
 });
 
 type UserFormData = z.infer<typeof userFormSchema>;
@@ -44,6 +56,13 @@ export function ManageUserDialog({ user, open, onOpenChange }: ManageUserDialogP
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
+    defaultValues: {
+      full_name: "",
+      email: "",
+      role: "İşçi",
+      password: "",
+      confirmPassword: "",
+    }
   });
 
   useEffect(() => {
@@ -61,6 +80,8 @@ export function ManageUserDialog({ user, open, onOpenChange }: ManageUserDialogP
           full_name: "",
           email: "",
           role: "İşçi",
+          password: "",
+          confirmPassword: "",
         });
         setSelectedRole("İşçi");
       }
@@ -69,26 +90,28 @@ export function ManageUserDialog({ user, open, onOpenChange }: ManageUserDialogP
   
   const userMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
-        const { id, ...updateData } = data;
+        const { id, password, confirmPassword, ...updateData } = data;
         
         if (id) {
             const { error } = await supabase.from('profiles').update(updateData).eq('id', id);
             if (error) throw new Error(error.message);
             return { ...updateData, id };
         } else {
-            // Yeni kullanıcı ekleme özelliği, güvenli bir şekilde
-            // uygulanmadığı için geçici olarak devre dışı bırakılmıştır.
-            // Bu özelliğin doğru bir şekilde çalışması için bir Edge Function
-            // ile kullanıcı oluşturma mantığının eklenmesi gerekmektedir.
-            toast({
-              variant: "destructive",
-              title: "Özellik Tamamlanmamış",
-              description: "Yeni kullanıcı ekleme özelliği henüz aktif değil.",
+            const { error } = await supabase.functions.invoke('create-user', {
+                body: {
+                    email: updateData.email,
+                    password: password,
+                    full_name: updateData.full_name,
+                    role: updateData.role,
+                }
             });
-            throw new Error("Yeni kullanıcı ekleme özelliği henüz tamamlanmamıştır.");
+            if (error) {
+              // The error from invoke is sometimes an object, let's stringify it
+              throw new Error(`Kullanıcı oluşturulamadı: ${typeof error === 'object' ? JSON.stringify(error) : error.message}`);
+            }
         }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
         toast({ title: "Başarılı", description: user ? "Kullanıcı bilgileri güncellendi." : "Kullanıcı oluşturuldu." });
         queryClient.invalidateQueries({ queryKey: ['users'] });
         onOpenChange(false);
@@ -139,6 +162,36 @@ export function ManageUserDialog({ user, open, onOpenChange }: ManageUserDialogP
                 </FormItem>
               )}
             />
+            {!user && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Şifre</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Şifre Tekrar</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
             <FormField
               control={form.control}
               name="role"
@@ -167,7 +220,7 @@ export function ManageUserDialog({ user, open, onOpenChange }: ManageUserDialogP
             />
             <DialogFooter>
               <Button type="submit" disabled={userMutation.isPending}>
-                {userMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                {userMutation.isPending ? (user ? 'Kaydediliyor...' : 'Oluşturuluyor...') : (user ? 'Kaydet' : 'Oluştur')}
               </Button>
             </DialogFooter>
           </form>
