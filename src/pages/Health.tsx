@@ -9,6 +9,7 @@ import HealthRecordsTable from '@/components/HealthRecordsTable';
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import VaccinationScheduleDialog from '@/components/VaccinationScheduleDialog';
 
 const RecordListDialog = ({ records, title, triggerText }: { records: HealthRecord[], title: string, triggerText: string }) => (
     <Dialog>
@@ -53,6 +54,7 @@ const Health = () => {
   const [records, setRecords] = React.useState<HealthRecord[]>(healthRecordsData);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedRecord, setSelectedRecord] = React.useState<HealthRecord | null>(null);
+  const [isVaccinationDialogOpen, setIsVaccinationDialogOpen] = React.useState(false);
 
   const activeRecords = records.filter(r => !r.isArchived);
   const archivedRecords = records.filter(r => r.isArchived);
@@ -119,6 +121,15 @@ const Health = () => {
         onSubmit={handleSubmit}
         initialData={selectedRecord}
       />
+      <VaccinationScheduleDialog
+        isOpen={isVaccinationDialogOpen}
+        onOpenChange={setIsVaccinationDialogOpen}
+        planned={plannedVaccinations}
+        completed={completedVaccinations}
+        onEdit={handleEdit}
+        onAddNew={handleAddNew}
+        onArchive={handleArchive}
+      />
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Sağlık</h1>
@@ -147,7 +158,7 @@ const Health = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card onClick={() => setIsVaccinationDialogOpen(true)} className="cursor-pointer transition-colors hover:bg-muted/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Aşı Takvimi</CardTitle>
             <Calendar className="h-4 w-4 text-blue-500" />
@@ -156,17 +167,11 @@ const Health = () => {
             <div className="space-y-3">
                 <div>
                     <div className="text-2xl font-bold text-blue-500">{plannedVaccinations.length}</div>
-                    <div className="flex justify-between items-center">
-                        <p className="text-xs text-muted-foreground">Planlanmış aşı</p>
-                        {plannedVaccinations.length > 0 && <RecordListDialog records={plannedVaccinations} title="Planlanmış Aşılar" triggerText="Listeyi Gör" />}
-                    </div>
+                    <p className="text-xs text-muted-foreground">Planlanmış aşı</p>
                 </div>
                 <div className="border-t pt-2">
                     <div className="text-2xl font-bold">{completedVaccinations.length}</div>
-                     <div className="flex justify-between items-center">
-                        <p className="text-xs text-muted-foreground">Tamamlanan aşılar</p>
-                        {completedVaccinations.length > 0 && <RecordListDialog records={completedVaccinations} title="Tamamlanan Aşılar" triggerText="Listeyi Gör" />}
-                    </div>
+                    <p className="text-xs text-muted-foreground">Tamamlanan aşılar</p>
                 </div>
             </div>
           </CardContent>
