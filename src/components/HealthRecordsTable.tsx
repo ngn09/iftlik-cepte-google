@@ -23,6 +23,7 @@ const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, i
               <TableHead>Küpe No</TableHead>
               <TableHead>Tarih</TableHead>
               <TableHead>Teşhis</TableHead>
+              <TableHead>Durum</TableHead>
               <TableHead>Veteriner</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
             </TableRow>
@@ -38,6 +39,26 @@ const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, i
                         {record.diagnosis}
                         {record.imageUrls && record.imageUrls.length > 0 && <ImageIcon className="h-4 w-4 text-muted-foreground" />}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {record.outcome && (
+                      <Badge
+                        variant={
+                          record.outcome === 'Öldü'
+                            ? 'destructive'
+                            : 'outline'
+                        }
+                        className={
+                          record.outcome === 'İyileşti'
+                            ? 'border-transparent bg-green-100 text-green-800 hover:bg-green-200'
+                            : record.outcome === 'Tedavi Altında'
+                            ? 'border-transparent bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                            : ''
+                        }
+                      >
+                        {record.outcome}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>{record.vetName}</TableCell>
                   <TableCell className="text-right">
@@ -65,7 +86,7 @@ const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, i
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   {isArchive ? "Arşivde kayıt bulunamadı." : "Aktif kayıt bulunamadı."}
                 </TableCell>
               </TableRow>

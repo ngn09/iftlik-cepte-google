@@ -9,6 +9,7 @@ export interface HealthRecord {
   vetName: string;
   imageUrls?: string[];
   isArchived: boolean;
+  outcome?: 'Tedavi Altında' | 'İyileşti' | 'Öldü';
 }
 
 export const healthRecordsData: HealthRecord[] = [
@@ -21,7 +22,8 @@ export const healthRecordsData: HealthRecord[] = [
     notes: 'Sol arka meme lobunda şişlik ve kızarıklık.',
     vetName: 'Dr. Ayşe Yılmaz',
     imageUrls: ['https://images.unsplash.com/photo-1465379944081-7f47de8d74ac?q=80&w=400&h=300&fit=crop'],
-    isArchived: false,
+    isArchived: true,
+    outcome: 'İyileşti',
   },
   {
     id: 2,
@@ -33,6 +35,7 @@ export const healthRecordsData: HealthRecord[] = [
     notes: 'Sağ ön ayakta hassasiyet.',
     imageUrls: [],
     isArchived: false,
+    outcome: 'Tedavi Altında',
   },
   {
     id: 3,
@@ -51,7 +54,20 @@ export const healthRecordsData: HealthRecord[] = [
     diagnosis: 'Doğum sonrası kontrol',
     treatment: 'Vitamin takviyesi',
     vetName: 'Dr. Ayşe Yılmaz',
-    imageUrls: ['https://images.unsplash.com/photo-1582562124811-c09040d0a901?q=80&w=400&h=300&fit=crop'],
+    imageUrls: ['https://images.unsplash.com/photo-1582562124811-c0901d0a901?q=80&w=400&h=300&fit=crop'],
     isArchived: false,
+    outcome: 'İyileşti',
+  },
+  {
+    id: 5,
+    animalTag: 'TR-005',
+    date: '2025-06-12',
+    diagnosis: 'Şarbon',
+    treatment: 'Tedavi denendi, başarısız.',
+    notes: 'Hayvan kurtarılamadı.',
+    vetName: 'Dr. Ali Veli',
+    imageUrls: [],
+    isArchived: true,
+    outcome: 'Öldü',
   },
 ];
