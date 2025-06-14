@@ -10,6 +10,8 @@ export const fixedAssets = [
     description: '50 HP gücünde, 4x4 çekişli, tarla ve bahçe işleri için uygun traktör.',
     lastMaintenance: '10.04.2025',
     nextMaintenance: '10.10.2025',
+    images: ['/placeholder.svg'],
+    documents: ['Kullanım Kılavuzu.pdf', 'Garanti Belgesi.pdf'],
   },
   {
     id: 2,
@@ -21,6 +23,8 @@ export const fixedAssets = [
     description: 'Aynı anda 8 hayvandan sağım yapabilen, paslanmaz çelik, mobil sağım makinesi.',
     lastMaintenance: '01.03.2025',
     nextMaintenance: '01.09.2025',
+    images: [],
+    documents: ['Bakım Talimatları.pdf'],
   },
   {
     id: 3,
@@ -32,6 +36,8 @@ export const fixedAssets = [
     description: '1000 litre kapasiteli, traktöre monte edilebilir, ilaçlama makinesi.',
     lastMaintenance: '15.02.2025',
     nextMaintenance: '15.08.2025',
+    images: ['/placeholder.svg'],
+    documents: [],
   },
   {
     id: 4,
@@ -43,6 +49,8 @@ export const fixedAssets = [
     description: 'Nakliye işleri için kullanılan, 3.5 ton taşıma kapasiteli kamyonet.',
     lastMaintenance: '05.06.2025',
     nextMaintenance: '05.12.2025',
+    images: ['/placeholder.svg', '/placeholder.svg'],
+    documents: ['Ruhsat.pdf', 'Sigorta Poliçesi.pdf'],
   },
   {
     id: 5,
@@ -54,5 +62,8 @@ export const fixedAssets = [
     description: 'Hayvan yemlerini homojen bir şekilde karıştıran, 2 metreküp kapasiteli makine. Motor arızası mevcut.',
     lastMaintenance: '20.01.2025',
     nextMaintenance: 'N/A',
+    images: [],
+    documents: ['Teknik Servis Raporu.pdf'],
   },
 ];
+
