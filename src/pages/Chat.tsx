@@ -207,7 +207,7 @@ const Chat = () => {
                     <div>
                       <p className="text-sm font-medium">
                         {msg.user}
-                        {msg.recipient && <span className="text-muted-foreground font-normal"> -> {msg.recipient}</span>}
+                        {msg.recipient && <span className="text-muted-foreground font-normal"> {'->'} {msg.recipient}</span>}
                       </p>
                       <p className="text-sm text-gray-600 break-words">{msg.text}</p>
                       <p className="text-xs text-gray-400 mt-1">
