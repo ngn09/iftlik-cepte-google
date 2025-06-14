@@ -1,16 +1,33 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSupabase } from "@/lib/supabaseClient";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { ManageUserDialog } from "@/components/ManageUserDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-// Bu fonksiyon, Supabase'deki 'profiles' tablosundan kullanıcıları çeker.
-// Not: Supabase projenizde 'id' (uuid), 'full_name' (text), 'email' (text), 
-// 'role' (text), ve 'status' (text) sütunlarına sahip bir 'profiles' tablosu olmalıdır.
-const fetchUsers = async () => {
+export type User = {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  status: string;
+};
+
+const fetchUsers = async (): Promise<User[]> => {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('profiles')
@@ -20,14 +37,16 @@ const fetchUsers = async () => {
     console.error("Error fetching users:", error);
     throw new Error(error.message);
   }
-  // Bileşenin `user.name` kullanabilmesi için `full_name` alanını `name` olarak eşliyoruz.
-  return data.map(user => ({ ...user, name: user.full_name }));
+  return data;
 };
-
 
 const Users = () => {
   const { toast } = useToast();
-  // TODO: Bu rol, giriş yapan kullanıcıdan dinamik olarak alınmalıdır.
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
   const currentUserRole = 'Yönetici';
   const isAdmin = currentUserRole === 'Yönetici';
 
@@ -36,12 +55,37 @@ const Users = () => {
     queryFn: fetchUsers,
   });
 
-  const handleUserAction = (action: string, userId?: number | string) => {
-    // TODO: Supabase ile kullanıcı ekleme, düzenleme ve silme işlemleri yapılacak
-    toast({
-      title: "Kullanıcı İşlemi",
-      description: `${action} işlemi için arayüz hazırlandı. ${userId ? `ID: ${userId}` : ''}`
-    });
+  const { mutate: deleteUser, isPending: isDeleting } = useMutation({
+    mutationFn: async (userId: string) => {
+        const supabase = getSupabase();
+        const { error } = await supabase.from('profiles').delete().eq('id', userId);
+        if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+        toast({ title: "Başarılı", description: "Kullanıcı başarıyla silindi." });
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        setUserToDelete(null);
+    },
+    onError: (error) => {
+        toast({ variant: "destructive", title: "Hata", description: `Kullanıcı silinirken bir hata oluştu: ${error.message}` });
+        setUserToDelete(null);
+    }
+  });
+
+  const handleAddNewUser = () => {
+    setUserToEdit(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setUserToEdit(user);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (userToDelete) {
+      deleteUser(userToDelete.id);
+    }
   };
 
   if (isLoading) {
@@ -101,7 +145,7 @@ const Users = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Kullanıcı Yönetimi</h1>
         {isAdmin && (
-          <Button onClick={() => handleUserAction("Yeni kullanıcı ekle")}>
+          <Button onClick={handleAddNewUser}>
             <Plus className="h-4 w-4 mr-2" />
             Yeni Kullanıcı
           </Button>
@@ -121,17 +165,17 @@ const Users = () => {
           <TableBody>
             {users?.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell className="font-medium">{user.full_name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>{user.status}</TableCell>
                 {isAdmin && (
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
-                      <Button variant="ghost" size="icon" onClick={() => handleUserAction("Kullanıcı düzenle", user.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700" onClick={() => handleUserAction("Kullanıcı sil", user.id)}>
+                      <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700" onClick={() => setUserToDelete(user)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -142,6 +186,23 @@ const Users = () => {
           </TableBody>
         </Table>
       </div>
+      <ManageUserDialog user={userToEdit} open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu işlem geri alınamaz. Bu, kullanıcıyı veritabanından kalıcı olarak silecektir.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeleting}>
+              {isDeleting ? "Siliniyor..." : "Sil"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
