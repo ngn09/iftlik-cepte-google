@@ -6,6 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
+import Animals from "./pages/Animals";
+import Inventory from "./pages/Inventory";
+import Health from "./pages/Health";
+import Cameras from "./pages/Cameras";
+import Chat from "./pages/Chat";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,7 +25,12 @@ const App = () => (
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
-            {/* Diğer sayfaların yollarını buraya ekleyeceğiz */}
+            <Route path="/animals" element={<Animals />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/health" element={<Health />} />
+            <Route path="/cameras" element={<Cameras />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
