@@ -2,7 +2,8 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PawPrint, Warehouse, HeartPulse, Video, MessageSquare } from "lucide-react";
+import { PawPrint, Warehouse, HeartPulse, Video } from "lucide-react";
+import MiniChat from "@/components/dashboard/MiniChat";
 
 const Dashboard = () => {
   return (
@@ -57,18 +58,7 @@ const Dashboard = () => {
                 </CardContent>
             </Card>
         </Link>
-        <Link to="/chat">
-            <Card className="hover:bg-muted h-full transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Sohbet</CardTitle>
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">5</div>
-                    <p className="text-xs text-muted-foreground">yeni mesaj</p>
-                </CardContent>
-            </Card>
-        </Link>
+        <MiniChat />
       </div>
     </div>
   );
