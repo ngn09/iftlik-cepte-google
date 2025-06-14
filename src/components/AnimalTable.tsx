@@ -8,6 +8,7 @@ interface Animal {
   id: string;
   species: string;
   breed: string;
+  gender: string;
   status: string;
   dateOfBirth: string;
 }
@@ -40,6 +41,7 @@ export const AnimalTable = ({ animals }: AnimalTableProps) => {
           <TableHead>Küpe No</TableHead>
           <TableHead>Tür</TableHead>
           <TableHead>Cins</TableHead>
+          <TableHead>Cinsiyet</TableHead>
           <TableHead>Durum</TableHead>
           <TableHead>Doğum Tarihi</TableHead>
           <TableHead>Yaş</TableHead>
@@ -52,6 +54,7 @@ export const AnimalTable = ({ animals }: AnimalTableProps) => {
             <TableCell className="font-medium">{animal.id}</TableCell>
             <TableCell>{animal.species}</TableCell>
             <TableCell>{animal.breed}</TableCell>
+            <TableCell>{animal.gender}</TableCell>
             <TableCell>{animal.status}</TableCell>
             <TableCell>{format(parseISO(animal.dateOfBirth), 'dd.MM.yyyy')}</TableCell>
             <TableCell>{calculateAge(animal.dateOfBirth)}</TableCell>
