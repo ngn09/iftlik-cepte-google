@@ -1,8 +1,62 @@
 
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Users, Send } from "lucide-react";
+import { Users, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+interface Message {
+  user: string;
+  text: string;
+  time: string;
+  avatar: string;
+  avatarBg: string;
+}
+
+const initialMessages: Message[] = [
+  {
+    user: 'Veteriner Dr. Ahmet',
+    text: 'Bugün 3 numaralı sığırın muayenesini yaptım, durumu iyi.',
+    time: '10:30',
+    avatar: 'V',
+    avatarBg: 'bg-blue-500',
+  },
+  {
+    user: 'Bakıcı Mehmet',
+    text: 'Teşekkürler doktor, notlarını aldım.',
+    time: '10:35',
+    avatar: 'B',
+    avatarBg: 'bg-green-500',
+  },
+];
 
 const Chat = () => {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [newMessage, setNewMessage] = useState("");
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newMessage.trim() === '') return;
+
+    const newMsg: Message = {
+      user: 'Siz',
+      text: newMessage,
+      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      avatar: 'S',
+      avatarBg: 'bg-purple-500',
+    };
+
+    setMessages([...messages, newMsg]);
+    setNewMessage('');
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -34,43 +88,36 @@ const Chat = () => {
           <CardHeader>
             <CardTitle className="text-lg">Genel Sohbet</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-96 bg-gray-50 rounded-lg p-4 mb-4 overflow-y-auto">
+          <CardContent className="flex flex-col h-[30rem]">
+            <div ref={chatContainerRef} className="flex-grow bg-gray-50 rounded-lg p-4 mb-4 overflow-y-auto">
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">
-                    V
+                {messages.map((msg, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <div className={`w-8 h-8 ${msg.avatarBg} rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                      {msg.avatar}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{msg.user}</p>
+                      <p className="text-sm text-gray-600 break-words">{msg.text}</p>
+                      <p className="text-xs text-gray-400 mt-1">{msg.time}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">Veteriner Dr. Ahmet</p>
-                    <p className="text-sm text-gray-600">Bugün 3 numaralı sığırın muayenesini yaptım, durumu iyi.</p>
-                    <p className="text-xs text-gray-400">10:30</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">
-                    B
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Bakıcı Mehmet</p>
-                    <p className="text-sm text-gray-600">Teşekkürler doktor, notlarını aldım.</p>
-                    <p className="text-xs text-gray-400">10:35</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
             
-            <div className="flex gap-2">
-              <input 
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <Input
                 type="text" 
-                placeholder="Mesajınızı yazın..." 
-                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Mesajınızı yazın..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                autoComplete="off"
               />
-              <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
+              <Button type="submit" size="icon">
                 <Send className="h-4 w-4" />
-              </button>
-            </div>
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
@@ -79,3 +126,4 @@ const Chat = () => {
 };
 
 export default Chat;
+
