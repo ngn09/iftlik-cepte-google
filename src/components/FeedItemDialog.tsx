@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -146,7 +145,7 @@ export function FeedItemDialog({ isOpen, onOpenChange, onSubmit, initialData }: 
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Birim seçin" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="kg">kg</SelectItem>
