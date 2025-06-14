@@ -76,12 +76,16 @@ export function ManageUserDialog({ user, open, onOpenChange }: ManageUserDialogP
             if (error) throw new Error(error.message);
             return { ...updateData, id };
         } else {
-            // Yeni kullanıcı eklerken auth.users tablosuna kayıt yapmamız gerekiyor.
-            // Şimdilik sadece profiles'a ekliyoruz, bu auth olmadan çalışmayacaktır.
-            // Bu kısım auth eklendikten sonra düzenlenmelidir.
-            const { data: newUserData, error } = await supabase.from('profiles').insert(updateData).select().single();
-            if (error) throw new Error(error.message);
-            return newUserData;
+            // Yeni kullanıcı ekleme özelliği, güvenli bir şekilde
+            // uygulanmadığı için geçici olarak devre dışı bırakılmıştır.
+            // Bu özelliğin doğru bir şekilde çalışması için bir Edge Function
+            // ile kullanıcı oluşturma mantığının eklenmesi gerekmektedir.
+            toast({
+              variant: "destructive",
+              title: "Özellik Tamamlanmamış",
+              description: "Yeni kullanıcı ekleme özelliği henüz aktif değil.",
+            });
+            throw new Error("Yeni kullanıcı ekleme özelliği henüz tamamlanmamıştır.");
         }
     },
     onSuccess: () => {
