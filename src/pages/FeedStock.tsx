@@ -1,18 +1,23 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
-import { feedStock } from "@/data/feedStock";
+import { feedStock as initialFeedStock, FeedItem } from "@/data/feedStock";
 import { animalGroups, rations as initialRations, Ration } from "@/data/rations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateRationDialog } from "@/components/CreateRationDialog";
+import { FeedItemDialog } from "@/components/FeedItemDialog";
 
 const FeedStock = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(animalGroups[0]?.id.toString());
   const [rations, setRations] = useState<Ration[]>(initialRations);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [feedStockItems, setFeedStockItems] = useState<FeedItem[]>(initialFeedStock);
+  const [isFeedItemDialogOpen, setIsFeedItemDialogOpen] = useState(false);
+  const [editingFeedItem, setEditingFeedItem] = useState<FeedItem | null>(null);
 
   const filteredRations = selectedGroupId
     ? rations.filter((r) => r.animalGroupId === parseInt(selectedGroupId, 10))
@@ -31,6 +36,32 @@ const FeedStock = () => {
     setRations(prevRations => [...prevRations, newRation]);
   };
 
+  const handleOpenFeedItemDialog = (item: FeedItem | null) => {
+    setEditingFeedItem(item);
+    setIsFeedItemDialogOpen(true);
+  };
+
+  const handleSaveFeedItem = (data: Omit<FeedItem, 'id' | 'lastUpdated'>) => {
+    const today = new Date().toLocaleDateString('tr-TR');
+    if (editingFeedItem) {
+      setFeedStockItems(currentItems =>
+        currentItems.map(item =>
+          item.id === editingFeedItem.id
+            ? { ...item, ...data, lastUpdated: today }
+            : item
+        )
+      );
+    } else {
+      const newItem: FeedItem = {
+        id: Date.now(),
+        ...data,
+        lastUpdated: today
+      };
+      setFeedStockItems(currentItems => [...currentItems, newItem]);
+    }
+    setIsFeedItemDialogOpen(false);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
@@ -46,7 +77,7 @@ const FeedStock = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Yem Stok Listesi</CardTitle>
-              <Button>
+              <Button onClick={() => handleOpenFeedItemDialog(null)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Yeni Yem Ekle
               </Button>
@@ -63,8 +94,8 @@ const FeedStock = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {feedStock.map((item) => (
-                    <TableRow key={item.id} className="cursor-pointer">
+                  {feedStockItems.map((item) => (
+                    <TableRow key={item.id} className="cursor-pointer" onClick={() => handleOpenFeedItemDialog(item)}>
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>{item.type}</TableCell>
                       <TableCell>{`${item.stockAmount} ${item.unit}`}</TableCell>
@@ -122,7 +153,7 @@ const FeedStock = () => {
                         </TableHeader>
                         <TableBody>
                           {ration.items.map((item, index) => {
-                            const feedInfo = feedStock.find(f => f.id === item.feedStockId);
+                            const feedInfo = feedStockItems.find(f => f.id === item.feedStockId);
                             return (
                               <TableRow key={index}>
                                 <TableCell className="font-medium">{feedInfo ? feedInfo.name : 'Bilinmeyen Yem'}</TableCell>
@@ -156,8 +187,14 @@ const FeedStock = () => {
         onOpenChange={setIsCreateDialogOpen}
         onSubmit={handleCreateRation}
         animalGroups={animalGroups}
-        feedStock={feedStock}
+        feedStock={feedStockItems}
         defaultGroupId={selectedGroupId}
+      />
+      <FeedItemDialog
+        isOpen={isFeedItemDialogOpen}
+        onOpenChange={setIsFeedItemDialogOpen}
+        onSubmit={handleSaveFeedItem}
+        initialData={editingFeedItem}
       />
     </div>
   );
