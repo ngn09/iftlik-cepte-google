@@ -1,8 +1,7 @@
 
 import { NavLink } from "react-router-dom";
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarTitle } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar";
 import { LayoutDashboard, PawPrint, Warehouse, HeartPulse, Video, MessageSquare, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const AppSidebar = () => {
   const menuItems = [
@@ -22,7 +21,7 @@ const AppSidebar = () => {
   return (
     <Sidebar className="border-r">
       <SidebarHeader>
-        <SidebarTitle>Çiftliğim</SidebarTitle>
+        <h2 className="text-lg font-semibold tracking-tight">Çiftliğim</h2>
       </SidebarHeader>
       <SidebarContent className="flex flex-col justify-between">
         <SidebarMenu>
