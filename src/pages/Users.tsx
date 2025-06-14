@@ -4,13 +4,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabase } from "@/lib/supabaseClient";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Bu fonksiyon, Supabase'deki 'profiles' tablosundan kullanıcıları çeker.
 // Not: Supabase projenizde 'id' (uuid), 'full_name' (text), 'email' (text), 
 // 'role' (text), ve 'status' (text) sütunlarına sahip bir 'profiles' tablosu olmalıdır.
 const fetchUsers = async () => {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from('profiles')
     .select('id, full_name, email, role, status');
