@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CreateRationDialog } from "@/components/CreateRationDialog";
 import { FeedItemDialog } from "@/components/FeedItemDialog";
 import { AddStockEntryDialog } from "@/components/AddStockEntryDialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const FeedStock = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(animalGroups[0]?.id.toString());
@@ -20,12 +23,68 @@ const FeedStock = () => {
   const [isFeedItemDialogOpen, setIsFeedItemDialogOpen] = useState(false);
   const [isAddStockDialogOpen, setIsAddStockDialogOpen] = useState(false);
   const [editingFeedItem, setEditingFeedItem] = useState<FeedItem | null>(null);
+  const [autoModeRations, setAutoModeRations] = useState<number[]>([]);
 
   const selectedGroup = animalGroups.find(g => g.id.toString() === selectedGroupId);
 
   const filteredRations = selectedGroupId
     ? rations.filter((r) => r.animalGroupId === parseInt(selectedGroupId, 10))
     : [];
+
+  useEffect(() => {
+    const autoModeRationIds: number[] = JSON.parse(localStorage.getItem('autoModeRations') || '[]');
+    setAutoModeRations(autoModeRationIds);
+
+    const todayStr = new Date().toLocaleDateString('tr-TR');
+    const lastDeductions: { [key: number]: string } = JSON.parse(localStorage.getItem('lastDeductions') || '{}');
+    
+    setFeedStockItems(currentFeedStock => {
+        let stockChanged = false;
+        let newFeedStock = JSON.parse(JSON.stringify(currentFeedStock)); // Deep copy
+        const newLastDeductions = {...lastDeductions};
+
+        const rationsForDeduction = rations.filter(r => 
+          autoModeRationIds.includes(r.id) && lastDeductions[r.id] !== todayStr
+        );
+
+        if (rationsForDeduction.length === 0) {
+            return currentFeedStock;
+        }
+
+        rationsForDeduction.forEach(ration => {
+            const group = animalGroups.find(g => g.id === ration.animalGroupId);
+            if (group) {
+              ration.items.forEach(item => {
+                const totalDeduction = item.amount * group.animalCount;
+                const stockItemIndex = newFeedStock.findIndex((fs: FeedItem) => fs.id === item.feedStockId);
+                if (stockItemIndex > -1) {
+                  newFeedStock[stockItemIndex].stockAmount -= totalDeduction;
+                  stockChanged = true;
+                }
+              });
+              newLastDeductions[ration.id] = todayStr;
+            }
+        });
+
+        if (stockChanged) {
+            localStorage.setItem('lastDeductions', JSON.stringify(newLastDeductions));
+            console.log('Otomatik düşüm işlemi sayfa yüklendiğinde gerçekleştirildi.');
+            return newFeedStock;
+        }
+
+        return currentFeedStock;
+    });
+  }, []); // Sadece bileşen yüklendiğinde çalışır
+
+  const handleAutoModeToggle = (checked: boolean, rationId: number) => {
+    setAutoModeRations(prev => {
+      const newAutoModeRations = checked
+        ? [...prev, rationId]
+        : prev.filter((id) => id !== rationId);
+      localStorage.setItem("autoModeRations", JSON.stringify(newAutoModeRations));
+      return newAutoModeRations;
+    });
+  };
   
   const handleCreateRation = (data: any) => {
     const newRation: Ration = {
@@ -210,12 +269,6 @@ const FeedStock = () => {
                 <div>
                   <CardTitle>Rasyon Planlama</CardTitle>
                   <CardDescription>Hayvan gruplarınıza göre rasyonları yönetin.</CardDescription>
-                  {selectedGroup && (
-                    <div className="flex items-center gap-2 pt-2">
-                      <span className="text-sm font-medium text-muted-foreground">Bu gruptaki hayvan sayısı:</span>
-                      <Badge variant="secondary" className="text-base font-bold">{selectedGroup.animalCount}</Badge>
-                    </div>
-                  )}
                 </div>
                 <div className="flex items-center gap-4">
                   <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
@@ -242,7 +295,25 @@ const FeedStock = () => {
                 filteredRations.map((ration) => (
                   <Card key={ration.id} className="w-full">
                     <CardHeader>
-                      <CardTitle>{ration.name}</CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>{ration.name}</CardTitle>
+                        <div className="flex items-center gap-6">
+                           <div className="flex items-center space-x-2">
+                            <Switch
+                              id={`auto-mode-${ration.id}`}
+                              checked={autoModeRations.includes(ration.id)}
+                              onCheckedChange={(checked) => handleAutoModeToggle(checked, ration.id)}
+                            />
+                            <Label htmlFor={`auto-mode-${ration.id}`}>Otomatik Düşüm</Label>
+                          </div>
+                          {selectedGroup && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-muted-foreground">Hayvan Sayısı:</span>
+                              <Badge variant="secondary" className="text-base font-bold">{selectedGroup.animalCount}</Badge>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <Table>
