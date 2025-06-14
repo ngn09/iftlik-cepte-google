@@ -9,10 +9,32 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      farms: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          owner_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string
+          farm_id: string | null
           full_name: string
           id: string
           role: string
@@ -22,6 +44,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          farm_id?: string | null
           full_name: string
           id: string
           role?: string
@@ -31,20 +54,32 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          farm_id?: string | null
           full_name?: string
           id?: string
           role?: string
           status?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_farm_id: {
+        Args: { size?: number }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

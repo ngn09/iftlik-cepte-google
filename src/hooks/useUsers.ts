@@ -7,7 +7,7 @@ import type { User } from "@/types/user";
 const fetchUsers = async (): Promise<User[]> => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, status');
+    .select('id, full_name, email, role, status, farm_id');
 
   if (error) {
     console.error("Error fetching users:", error);

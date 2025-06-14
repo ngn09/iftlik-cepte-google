@@ -5,4 +5,5 @@ export type User = {
   email: string;
   role: string;
   status: string;
+  farm_id?: string | null;
 };
