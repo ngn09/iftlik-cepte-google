@@ -1,9 +1,9 @@
 
 import { useParams, Link } from "react-router-dom";
 import { fixedAssets } from "@/data/inventory";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, File, Image } from "lucide-react";
 
 const InventoryItemDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,6 +75,16 @@ const InventoryItemDetails = () => {
             <p className="text-muted-foreground">{asset.description}</p>
           </div>
         </CardContent>
+        <CardFooter className="flex gap-2 border-t p-6">
+          <Button variant="outline">
+            <File className="mr-2 h-4 w-4" />
+            Belge Yükle
+          </Button>
+          <Button variant="outline">
+            <Image className="mr-2 h-4 w-4" />
+            Resim Yükle
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
