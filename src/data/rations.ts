@@ -4,6 +4,7 @@ import { FeedItem } from "./feedStock";
 export interface AnimalGroup {
   id: number;
   name: string;
+  animalCount: number;
 }
 
 export interface RationItem {
@@ -19,11 +20,11 @@ export interface Ration {
 }
 
 export const animalGroups: AnimalGroup[] = [
-  { id: 1, name: 'Sağmal İnekler (Yüksek Verim)' },
-  { id: 2, name: 'Sağmal İnekler (Orta Verim)' },
-  { id: 3, name: 'Kuru Dönem İnekler' },
-  { id: 4, name: 'Düveler (6-12 Ay)' },
-  { id: 5, name: 'Buzağılar (0-3 Ay)' },
+  { id: 1, name: 'Sağmal İnekler (Yüksek Verim)', animalCount: 50 },
+  { id: 2, name: 'Sağmal İnekler (Orta Verim)', animalCount: 75 },
+  { id: 3, name: 'Kuru Dönem İnekler', animalCount: 20 },
+  { id: 4, name: 'Düveler (6-12 Ay)', animalCount: 30 },
+  { id: 5, name: 'Buzağılar (0-3 Ay)', animalCount: 15 },
 ];
 
 export const rations: Ration[] = [

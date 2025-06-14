@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,6 +20,8 @@ const FeedStock = () => {
   const [isFeedItemDialogOpen, setIsFeedItemDialogOpen] = useState(false);
   const [isAddStockDialogOpen, setIsAddStockDialogOpen] = useState(false);
   const [editingFeedItem, setEditingFeedItem] = useState<FeedItem | null>(null);
+
+  const selectedGroup = animalGroups.find(g => g.id.toString() === selectedGroupId);
 
   const filteredRations = selectedGroupId
     ? rations.filter((r) => r.animalGroupId === parseInt(selectedGroupId, 10))
@@ -207,6 +210,11 @@ const FeedStock = () => {
                 <div>
                   <CardTitle>Rasyon Planlama</CardTitle>
                   <CardDescription>Hayvan gruplarınıza göre rasyonları yönetin.</CardDescription>
+                  {selectedGroup && (
+                    <p className="text-sm text-muted-foreground pt-1">
+                      Bu gruptaki hayvan sayısı: <strong>{selectedGroup.animalCount}</strong>
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-4">
                   <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
