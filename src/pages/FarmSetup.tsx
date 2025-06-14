@@ -1,5 +1,6 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,15 +10,21 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/auth/useAuth';
 
 const FarmSetup = () => {
-    const { user, fetchProfile } = useAuth();
+    const { profile, fetchProfile } = useAuth();
+    const navigate = useNavigate();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [farmName, setFarmName] = useState('');
     const [farmId, setFarmId] = useState('');
 
+    useEffect(() => {
+        if (profile?.farm_id) {
+            navigate('/', { replace: true });
+        }
+    }, [profile, navigate]);
+
     const handleCreateFarm = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Çiftlik oluşturma isteği, mevcut kullanıcı (useAuth):", user);
         if (!farmName.trim()) return;
 
         setLoading(true);
@@ -29,8 +36,6 @@ const FarmSetup = () => {
             setLoading(false);
             return;
         }
-        
-        console.log("İşlem için kullanıcı doğrulaması (supabase.auth.getUser):", currentUser);
 
         const { data: farmData, error: farmError } = await supabase
             .from('farms')
