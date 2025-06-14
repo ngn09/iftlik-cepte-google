@@ -1,4 +1,3 @@
-
 export interface HealthRecord {
   id: number;
   animalTag: string;
@@ -41,11 +40,12 @@ export const healthRecordsData: HealthRecord[] = [
     id: 3,
     animalTag: 'TR-007',
     date: '2025-05-20',
-    diagnosis: 'Rutin Kontrol',
+    diagnosis: 'Aşılama (Rutin Kontrol)',
     treatment: 'Aşı yapıldı (IBR-BVD)',
     vetName: 'Dr. Ayşe Yılmaz',
     imageUrls: [],
     isArchived: true,
+    outcome: 'İyileşti',
   },
   {
     id: 4,
@@ -69,5 +69,27 @@ export const healthRecordsData: HealthRecord[] = [
     imageUrls: [],
     isArchived: true,
     outcome: 'Öldü',
+  },
+  {
+    id: 6,
+    animalTag: 'TR-031',
+    date: '2025-06-28', // Future date for planned vaccination
+    diagnosis: 'Planlı Aşı (Şap)',
+    treatment: 'Aşı randevusu oluşturuldu.',
+    vetName: 'Dr. Mehmet Kaya',
+    imageUrls: [],
+    isArchived: false,
+    outcome: 'Tedavi Altında',
+  },
+  {
+    id: 7,
+    animalTag: 'TR-045',
+    date: '2025-06-01', // Past date for completed vaccination
+    diagnosis: 'Aşılama (BVD)',
+    treatment: 'BVD aşısı yapıldı.',
+    vetName: 'Dr. Ayşe Yılmaz',
+    imageUrls: [],
+    isArchived: false,
+    outcome: 'İyileşti',
   },
 ];

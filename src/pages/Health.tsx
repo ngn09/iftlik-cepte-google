@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeartPulse, AlertCircle, Calendar, Plus, Archive, Image as ImageIcon, CheckCircle, Skull } from "lucide-react";
@@ -63,6 +62,17 @@ const Health = () => {
   const allImages = records
     .flatMap(r => r.imageUrls?.map(url => ({ recordId: r.id, url, animalTag: r.animalTag, date: r.date })) || [])
     .filter(img => img.url);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const vaccinationRecords = records.filter(r => 
+    r.diagnosis.toLowerCase().includes('aşı') || 
+    r.treatment.toLowerCase().includes('aşı')
+  );
+  
+  const plannedVaccinations = vaccinationRecords.filter(r => new Date(r.date) >= today);
+  const completedVaccinations = vaccinationRecords.filter(r => new Date(r.date) < today);
 
   const handleAddNew = () => {
     setSelectedRecord(null);
@@ -139,12 +149,26 @@ const Health = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aşı Randevuları</CardTitle>
+            <CardTitle className="text-sm font-medium">Aşı Takvimi</CardTitle>
             <Calendar className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">8</div>
-            <p className="text-xs text-muted-foreground">Bu hafta içinde</p>
+            <div className="space-y-3">
+                <div>
+                    <div className="text-2xl font-bold text-blue-500">{plannedVaccinations.length}</div>
+                    <div className="flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">Planlanmış aşı</p>
+                        {plannedVaccinations.length > 0 && <RecordListDialog records={plannedVaccinations} title="Planlanmış Aşılar" triggerText="Listeyi Gör" />}
+                    </div>
+                </div>
+                <div className="border-t pt-2">
+                    <div className="text-2xl font-bold">{completedVaccinations.length}</div>
+                     <div className="flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">Tamamlanan aşılar</p>
+                        {completedVaccinations.length > 0 && <RecordListDialog records={completedVaccinations} title="Tamamlanan Aşılar" triggerText="Listeyi Gör" />}
+                    </div>
+                </div>
+            </div>
           </CardContent>
         </Card>
 
