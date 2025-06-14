@@ -58,7 +58,7 @@ const Dashboard = () => {
                 </CardContent>
             </Card>
         </Link>
-        <MiniChat />
+        <MiniChat className="md:col-span-2 lg:col-span-3" />
       </div>
     </div>
   );

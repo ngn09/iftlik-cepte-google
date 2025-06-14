@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface Message {
   user: string;
@@ -31,7 +32,11 @@ const initialMessages: Message[] = [
     },
 ];
 
-const MiniChat = () => {
+interface MiniChatProps {
+    className?: string;
+}
+
+const MiniChat = ({ className }: MiniChatProps) => {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [newMessage, setNewMessage] = useState("");
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -59,7 +64,7 @@ const MiniChat = () => {
     };
 
     return (
-        <Card className="h-full flex flex-col">
+        <Card className={cn("h-full flex flex-col", className)}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Hızlı Sohbet</CardTitle>
                 <Link to="/chat" className="text-sm text-muted-foreground hover:text-primary">
