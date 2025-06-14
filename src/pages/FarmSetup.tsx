@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,7 @@ const FarmSetup = () => {
 
         const { data: farmData, error: farmError } = await supabase
             .from('farms')
-            .insert({ name: farmName, owner_id: currentUser.id })
+            .insert({ name: farmName }) // owner_id kaldırıldı, veritabanı tetikleyicisi halledecek.
             .select()
             .single();
 
