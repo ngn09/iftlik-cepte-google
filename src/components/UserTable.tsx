@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import type { User } from "@/types/user";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { roleOptions } from "@/config/roles";
+import { useUpdateUserRole } from "@/hooks/useUpdateUserRole";
 
 interface UserTableProps {
   users: User[] | undefined;
@@ -39,6 +42,12 @@ const UserTableSkeleton = () => (
 );
 
 export function UserTable({ users, isLoading, onEdit, onDelete, isAdmin }: UserTableProps) {
+  const { mutate: updateUserRole, isPending: isUpdatingRole } = useUpdateUserRole();
+
+  const handleRoleChange = (userId: string, newRole: string) => {
+    updateUserRole({ userId, role: newRole });
+  };
+
   return (
     <div className="border rounded-lg">
       {isLoading ? <UserTableSkeleton /> : (
@@ -57,7 +66,28 @@ export function UserTable({ users, isLoading, onEdit, onDelete, isAdmin }: UserT
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.full_name}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role}</TableCell>
+                <TableCell>
+                  {isAdmin ? (
+                    <Select
+                      value={user.role}
+                      onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                      disabled={isUpdatingRole}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Rol seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roleOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    user.role
+                  )}
+                </TableCell>
                 <TableCell>{user.status}</TableCell>
                 {isAdmin && (
                   <TableCell className="text-right">
