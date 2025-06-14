@@ -1,0 +1,45 @@
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PawPrint, Warehouse, HeartPulse } from "lucide-react";
+
+const Dashboard = () => {
+  return (
+    <div className="p-4 md:p-8">
+      <h1 className="text-3xl font-bold mb-6">Gösterge Paneli</h1>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Toplam Hayvan Sayısı</CardTitle>
+            <PawPrint className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">1,254</div>
+            <p className="text-xs text-muted-foreground">+20.1% geçen aydan</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Yem Stoğu (Ton)</CardTitle>
+            <Warehouse className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">34.5 Ton</div>
+            <p className="text-xs text-muted-foreground">Hedefin %85'i</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sağlık Uyarıları</CardTitle>
+            <HeartPulse className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-xs text-muted-foreground">Acil müdahale gerekiyor</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
