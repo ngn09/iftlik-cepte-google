@@ -8,6 +8,7 @@ import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
 import Animals from "./pages/Animals";
 import Inventory from "./pages/Inventory";
+import InventoryItemDetails from "./pages/InventoryItemDetails";
 import Health from "./pages/Health";
 import Cameras from "./pages/Cameras";
 import Chat from "./pages/Chat";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/animals" element={<Animals />} />
             <Route path="/inventory" element={<Inventory />} />
+            <Route path="/inventory/:id" element={<InventoryItemDetails />} />
             <Route path="/health" element={<Health />} />
             <Route path="/cameras" element={<Cameras />} />
             <Route path="/chat" element={<Chat />} />

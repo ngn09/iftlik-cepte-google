@@ -3,52 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-
-const fixedAssets = [
-  {
-    id: 1,
-    name: 'John Deere 5050E Traktör',
-    category: 'Araç',
-    purchaseDate: '20.05.2021',
-    value: 1250000,
-    status: 'Aktif',
-  },
-  {
-    id: 2,
-    name: 'Süt Sağım Makinesi (2x4)',
-    category: 'Ekipman',
-    purchaseDate: '15.01.2022',
-    value: 180000,
-    status: 'Aktif',
-  },
-  {
-    id: 3,
-    name: 'Tarla Pülverizatörü',
-    category: 'Ekipman',
-    purchaseDate: '10.03.2023',
-    value: 95000,
-    status: 'Aktif',
-  },
-  {
-    id: 4,
-    name: 'Ford Transit Kamyonet',
-    category: 'Araç',
-    purchaseDate: '02.09.2019',
-    value: 780000,
-    status: 'Bakımda',
-  },
-  {
-    id: 5,
-    name: 'Otomatik Yem Karma Makinesi',
-    category: 'Ekipman',
-    purchaseDate: '25.11.2023',
-    value: 230000,
-    status: 'Arızalı',
-  },
-];
-
+import { useNavigate } from "react-router-dom";
+import { fixedAssets } from "@/data/inventory";
 
 const Inventory = () => {
+  const navigate = useNavigate();
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Aktif':
@@ -60,6 +20,10 @@ const Inventory = () => {
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
+  };
+
+  const handleRowClick = (id: number) => {
+    navigate(`/inventory/${id}`);
   };
 
   return (
@@ -89,7 +53,11 @@ const Inventory = () => {
             </TableHeader>
             <TableBody>
               {fixedAssets.map((asset) => (
-                <TableRow key={asset.id}>
+                <TableRow
+                  key={asset.id}
+                  onClick={() => handleRowClick(asset.id)}
+                  className="cursor-pointer"
+                >
                   <TableCell className="font-medium">{asset.name}</TableCell>
                   <TableCell>{asset.category}</TableCell>
                   <TableCell>{asset.purchaseDate}</TableCell>
@@ -112,4 +80,3 @@ const Inventory = () => {
 };
 
 export default Inventory;
-
