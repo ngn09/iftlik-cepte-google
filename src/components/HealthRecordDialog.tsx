@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -68,12 +67,17 @@ const HealthRecordDialog = ({ isOpen, onOpenChange, onSubmit, initialData }: Hea
   }, [initialData, form]);
 
   const handleSubmit = (data: HealthRecordFormData) => {
-    const { imageUrls, ...restData } = data;
     const recordToSubmit: HealthRecord = {
       id: initialData?.id || Date.now(),
       isArchived: initialData?.isArchived || false,
-      ...restData,
-      imageUrls: imageUrls ? imageUrls.split(',').map(url => url.trim()).filter(url => url) : [],
+      animalTag: data.animalTag,
+      date: data.date,
+      diagnosis: data.diagnosis,
+      treatment: data.treatment,
+      outcome: data.outcome,
+      notes: data.notes,
+      vetName: data.vetName,
+      imageUrls: data.imageUrls ? data.imageUrls.split(',').map(url => url.trim()).filter(url => url) : [],
     };
     onSubmit(recordToSubmit);
   };
