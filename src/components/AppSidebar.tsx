@@ -1,9 +1,15 @@
 
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar";
-import { LayoutDashboard, PawPrint, Warehouse, HeartPulse, Video, MessageSquare, Settings, Users, Wheat } from "lucide-react";
+import { LayoutDashboard, PawPrint, Warehouse, HeartPulse, Video, MessageSquare, Settings, Users, Wheat, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const AppSidebar = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const menuItems = [
     { to: "/", icon: LayoutDashboard, label: "Gösterge Paneli" },
     { to: "/animals", icon: PawPrint, label: "Hayvanlar" },
@@ -19,6 +25,22 @@ const AppSidebar = () => {
     `flex items-center p-2 rounded-lg text-base font-normal ${
       isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'
     }`;
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Hata",
+        description: "Çıkış yapılırken bir hata oluştu.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Başarıyla çıkış yapıldı",
+      });
+      navigate("/auth", { replace: true });
+    }
+  };
 
   return (
     <Sidebar className="border-r">
@@ -36,11 +58,19 @@ const AppSidebar = () => {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
-        <div className="p-4">
+        <div className="p-4 border-t mt-4 space-y-2">
             <NavLink to="/settings" className={getNavLinkClass} end>
                 <Settings className="h-5 w-5 mr-3" />
                 <span>Ayarlar</span>
             </NavLink>
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="h-5 w-5 mr-3" />
+              <span>Çıkış Yap</span>
+            </Button>
         </div>
       </SidebarContent>
     </Sidebar>

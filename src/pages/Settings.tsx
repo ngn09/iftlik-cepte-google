@@ -1,14 +1,16 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Settings as SettingsIcon, Users, Bell, Shield, Database, Plus, Edit, Trash2 } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Shield, Database, Plus, Edit, Trash2, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([
     { id: 1, name: "Admin Kullanıcı", email: "admin@ciftlik.com", role: "Yönetici", status: "Aktif" },
     { id: 2, name: "Çiftlik İşçisi", email: "isci@ciftlik.com", role: "İşçi", status: "Aktif" },
@@ -50,6 +52,22 @@ const Settings = () => {
       title: "Veri Yönetimi",
       description: `${action} işlemi başlatıldı.`
     });
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Çıkış yapılırken bir hata oluştu.",
+      });
+    } else {
+      toast({
+        title: "Başarıyla çıkış yapıldı",
+      });
+      navigate("/auth", { replace: true });
+    }
   };
 
   return (
@@ -246,6 +264,19 @@ const Settings = () => {
                 <h3 className="font-semibold">Oturum Geçmişi</h3>
                 <p className="text-sm text-muted-foreground">Son oturum açma işlemlerinizi görüntüleyin</p>
               </button>
+
+              <div className="pt-4 border-t">
+                <button
+                    onClick={handleLogout}
+                    className="w-full text-left p-4 border rounded-lg hover:bg-red-50 text-red-600 flex items-center"
+                >
+                    <LogOut className="h-5 w-5 mr-3" />
+                    <div className="flex flex-col">
+                        <h3 className="font-semibold">Oturumu Kapat</h3>
+                        <p className="text-sm text-muted-foreground">Mevcut oturumunuzu sonlandırın</p>
+                    </div>
+                </button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
