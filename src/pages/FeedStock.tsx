@@ -23,6 +23,7 @@ const FeedStock = () => {
   const [isFeedItemDialogOpen, setIsFeedItemDialogOpen] = useState(false);
   const [isAddStockDialogOpen, setIsAddStockDialogOpen] = useState(false);
   const [editingFeedItem, setEditingFeedItem] = useState<FeedItem | null>(null);
+  const [editingRation, setEditingRation] = useState<Ration | null>(null);
   const [autoModeRations, setAutoModeRations] = useState<number[]>([]);
 
   const selectedGroup = animalGroups.find(g => g.id.toString() === selectedGroupId);
@@ -86,9 +87,8 @@ const FeedStock = () => {
     });
   };
   
-  const handleCreateRation = (data: any) => {
-    const newRation: Ration = {
-      id: Date.now(),
+  const handleSaveRation = (data: any) => {
+    const rationData = {
       name: data.name,
       animalGroupId: parseInt(data.animalGroupId, 10),
       items: data.items.map((item: any) => ({
@@ -96,7 +96,36 @@ const FeedStock = () => {
         amount: item.amount,
       })),
     };
-    setRations(prevRations => [...prevRations, newRation]);
+
+    if (editingRation) {
+      const updatedRation: Ration = { ...editingRation, ...rationData };
+      setRations(prevRations =>
+        prevRations.map(r => (r.id === editingRation.id ? updatedRation : r))
+      );
+    } else {
+      const newRation: Ration = {
+        id: Date.now(),
+        ...rationData,
+      };
+      setRations(prevRations => [...prevRations, newRation]);
+    }
+  };
+
+  const handleOpenCreateRationDialog = () => {
+    setEditingRation(null);
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleOpenEditRationDialog = (ration: Ration) => {
+    setEditingRation(ration);
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleRationDialogOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      setEditingRation(null);
+    }
+    setIsCreateDialogOpen(isOpen);
   };
 
   const handleOpenFeedItemDialog = (item: FeedItem | null) => {
@@ -283,7 +312,7 @@ const FeedStock = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Button onClick={handleOpenCreateRationDialog}>
                     <Plus className="mr-2 h-4 w-4" />
                     Rasyon Oluştur
                   </Button>
@@ -296,7 +325,9 @@ const FeedStock = () => {
                   <Card key={ration.id} className="w-full">
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle>{ration.name}</CardTitle>
+                        <CardTitle className="cursor-pointer hover:underline" onClick={() => handleOpenEditRationDialog(ration)}>
+                            {ration.name}
+                        </CardTitle>
                         <div className="flex items-center gap-6">
                            <div className="flex items-center space-x-2">
                             <Switch
@@ -356,11 +387,12 @@ const FeedStock = () => {
       </Tabs>
       <CreateRationDialog
         isOpen={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSubmit={handleCreateRation}
+        onOpenChange={handleRationDialogOpenChange}
+        onSubmit={handleSaveRation}
         animalGroups={animalGroups}
         feedStock={feedStockItems}
         defaultGroupId={selectedGroupId}
+        initialData={editingRation}
       />
       <FeedItemDialog
         isOpen={isFeedItemDialogOpen}

@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { AnimalGroup } from "@/data/rations";
+import { AnimalGroup, Ration } from "@/data/rations";
 import { FeedItem } from "@/data/feedStock";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -48,14 +48,16 @@ interface CreateRationDialogProps {
   animalGroups: AnimalGroup[];
   feedStock: FeedItem[];
   defaultGroupId?: string;
+  initialData?: Ration | null;
 }
 
-export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroups, feedStock, defaultGroupId }: CreateRationDialogProps) {
+export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroups, feedStock, defaultGroupId, initialData }: CreateRationDialogProps) {
+  const isEditMode = !!initialData;
+
   const form = useForm<RationFormValues>({
     resolver: zodResolver(rationFormSchema),
     defaultValues: {
       name: "",
-      animalGroupId: defaultGroupId || undefined,
       items: [{ feedStockId: "", amount: 1 }],
     },
   });
@@ -66,12 +68,25 @@ export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroup
   });
 
   React.useEffect(() => {
-    form.reset({
-      name: "",
-      animalGroupId: defaultGroupId || undefined,
-      items: [{ feedStockId: "", amount: 1 }],
-    });
-  }, [defaultGroupId, isOpen, form]);
+    if (isOpen) {
+      if (isEditMode && initialData) {
+        form.reset({
+          name: initialData.name,
+          animalGroupId: initialData.animalGroupId.toString(),
+          items: initialData.items.map(item => ({
+            feedStockId: item.feedStockId.toString(),
+            amount: item.amount,
+          })),
+        });
+      } else {
+        form.reset({
+          name: "",
+          animalGroupId: defaultGroupId || undefined,
+          items: [{ feedStockId: "", amount: 1 }],
+        });
+      }
+    }
+  }, [isOpen, isEditMode, initialData, defaultGroupId, form]);
 
   const handleFormSubmit = (data: RationFormValues) => {
     onSubmit(data);
@@ -82,9 +97,11 @@ export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroup
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
-          <DialogTitle>Yeni Rasyon Oluştur</DialogTitle>
+          <DialogTitle>{isEditMode ? "Rasyonu Düzenle" : "Yeni Rasyon Oluştur"}</DialogTitle>
           <DialogDescription>
-            Yeni bir yem rasyonu oluşturmak için aşağıdaki alanları doldurun.
+            {isEditMode
+              ? "Rasyon bilgilerini düzenlemek için aşağıdaki alanları güncelleyin."
+              : "Yeni bir yem rasyonu oluşturmak için aşağıdaki alanları doldurun."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -188,7 +205,7 @@ export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroup
             </div>
             <DialogFooter>
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>İptal</Button>
-              <Button type="submit">Rasyonu Kaydet</Button>
+              <Button type="submit">{isEditMode ? "Değişiklikleri Kaydet" : "Rasyonu Kaydet"}</Button>
             </DialogFooter>
           </form>
         </Form>
