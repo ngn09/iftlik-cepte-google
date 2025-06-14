@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
-import type { User } from "@/pages/Users";
+import type { User } from "@/types/user";
 import { useEffect } from "react";
 import { userFormSchema, type UserFormData } from "@/config/schemas/userSchema";
 import { useUserMutation } from "@/hooks/useUserMutation";
