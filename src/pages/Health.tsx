@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeartPulse, AlertCircle, Calendar, Plus, Archive, CheckCircle, Skull } from "lucide-react";
@@ -143,25 +144,6 @@ const Health = () => {
           </CardContent>
         </Card>
         
-        <Card onClick={() => setIsVaccinationDialogOpen(true)} className="cursor-pointer transition-colors hover:bg-muted/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aşı Takvimi</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-                <div>
-                    <div className="text-2xl font-bold text-blue-500">{plannedVaccinations.length}</div>
-                    <p className="text-xs text-muted-foreground">Planlanmış aşı</p>
-                </div>
-                <div className="border-t pt-2">
-                    <div className="text-2xl font-bold">{completedVaccinations.length}</div>
-                    <p className="text-xs text-muted-foreground">Tamamlanan aşılar</p>
-                </div>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card onClick={() => handleCardClick('Tedavisi Tamamlananlar', treatedRecords)} className="cursor-pointer transition-colors hover:bg-muted/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tedavisi Tamamlananlar</CardTitle>
@@ -172,6 +154,7 @@ const Health = () => {
             <p className="text-xs text-muted-foreground">İyileşen hayvan sayısı</p>
           </CardContent>
         </Card>
+
         <Card onClick={() => handleCardClick('Ölen Hayvanlar', deceasedRecords)} className="cursor-pointer transition-colors hover:bg-muted/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ölen Hayvanlar</CardTitle>
@@ -180,6 +163,25 @@ const Health = () => {
           <CardContent>
             <div className="text-2xl font-bold">{deceasedRecords.length}</div>
             <p className="text-xs text-muted-foreground">Toplam kayıp</p>
+          </CardContent>
+        </Card>
+
+        <Card onClick={() => setIsVaccinationDialogOpen(true)} className="cursor-pointer transition-colors hover:bg-muted/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Aşı Takvimi</CardTitle>
+            <Calendar className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 items-center">
+                <div>
+                    <div className="text-2xl font-bold text-blue-500">{plannedVaccinations.length}</div>
+                    <p className="text-xs text-muted-foreground">Planlanmış</p>
+                </div>
+                <div className="border-l border-border pl-4">
+                    <div className="text-2xl font-bold">{completedVaccinations.length}</div>
+                    <p className="text-xs text-muted-foreground">Tamamlanan</p>
+                </div>
+            </div>
           </CardContent>
         </Card>
       </div>
