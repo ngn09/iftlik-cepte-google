@@ -5,66 +5,63 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Auth = () => {
     const [loading, setLoading] = useState(false);
-    const [phone, setPhone] = useState('');
-    const [otp, setOtp] = useState('');
-    const [otpSent, setOtpSent] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
     const { toast } = useToast();
 
-    const handleSendOtp = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        const formattedPhone = phone.startsWith('+') ? phone : `+90${phone.replace(/\D/g, '')}`;
-
-        const { error } = await supabase.auth.signInWithOtp({
-            phone: formattedPhone,
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
         });
 
         if (error) {
             toast({
                 variant: "destructive",
                 title: "Hata",
-                description: error.message,
+                description: `Giriş yapılamadı: ${error.message}`,
             });
         } else {
-            setOtpSent(true);
-            toast({
-                title: "Başarılı",
-                description: "Telefonunuza bir OTP kodu gönderildi.",
-            });
-        }
-        setLoading(false);
-    };
-
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        const formattedPhone = phone.startsWith('+') ? phone : `+90${phone.replace(/\D/g, '')}`;
-
-        const { data, error } = await supabase.auth.verifyOtp({
-            phone: formattedPhone,
-            token: otp,
-            type: 'sms',
-        });
-
-        if (error) {
-            toast({
-                variant: "destructive",
-                title: "Hata",
-                description: `OTP doğrulanırken hata: ${error.message}`,
-            });
-        } else if (data.session) {
             toast({
                 title: "Giriş Başarılı",
                 description: "Yönlendiriliyorsunuz...",
             });
-        } else {
+            // Redirect is handled by AuthProvider
+        }
+        setLoading(false);
+    };
+
+    const handleSignUp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                },
+            },
+        });
+
+        if (error) {
             toast({
                 variant: "destructive",
                 title: "Hata",
-                description: "Geçersiz OTP kodu veya oturum oluşturulamadı.",
+                description: `Kayıt oluşturulamadı: ${error.message}`,
+            });
+        } else {
+            toast({
+                title: "Kayıt Başarılı",
+                description: "Lütfen e-postanızı kontrol ederek hesabınızı doğrulayın.",
             });
         }
         setLoading(false);
@@ -72,49 +69,104 @@ const Auth = () => {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-50">
-            <Card className="w-full max-w-sm">
-                <CardHeader>
-                    <CardTitle>{otpSent ? 'OTP Kodu' : 'Giriş Yap / Kayıt Ol'}</CardTitle>
-                    <CardDescription>
-                        {otpSent ? 'Telefonunuza gelen kodu girin.' : 'Devam etmek için telefon numaranızı girin.'}
-                    </CardDescription>
-                </CardHeader>
-                <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp}>
-                    <CardContent className="space-y-4">
-                        {!otpSent ? (
-                            <div className="space-y-2">
-                                <label htmlFor="phone">Telefon Numarası</label>
-                                <Input
-                                    id="phone"
-                                    type="tel"
-                                    placeholder="555 123 4567"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    disabled={loading}
-                                />
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                <label htmlFor="otp">OTP Kodu</label>
-                                <Input
-                                    id="otp"
-                                    type="text"
-                                    placeholder="123456"
-                                    value={otp}
-                                    onChange={(e) => setOtp(e.target.value)}
-                                    disabled={loading}
-                                    maxLength={6}
-                                />
-                            </div>
-                        )}
-                    </CardContent>
-                    <CardFooter>
-                        <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? 'Yükleniyor...' : (otpSent ? 'Doğrula & Giriş Yap' : 'OTP Gönder')}
-                        </Button>
-                    </CardFooter>
-                </form>
-            </Card>
+            <Tabs defaultValue="login" className="w-full max-w-sm">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="login">Giriş Yap</TabsTrigger>
+                    <TabsTrigger value="signup">Kayıt Ol</TabsTrigger>
+                </TabsList>
+                <TabsContent value="login">
+                    <Card>
+                        <form onSubmit={handleLogin}>
+                            <CardHeader>
+                                <CardTitle>Giriş Yap</CardTitle>
+                                <CardDescription>
+                                    Hesabınıza erişmek için bilgilerinizi girin.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="login-email">E-posta</label>
+                                    <Input
+                                        id="login-email"
+                                        type="email"
+                                        placeholder="ornek@mail.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        disabled={loading}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="login-password">Şifre</label>
+                                    <Input
+                                        id="login-password"
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </CardContent>
+                            <CardFooter>
+                                <Button type="submit" className="w-full" disabled={loading}>
+                                    {loading ? 'Yükleniyor...' : 'Giriş Yap'}
+                                </Button>
+                            </CardFooter>
+                        </form>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="signup">
+                     <Card>
+                        <form onSubmit={handleSignUp}>
+                            <CardHeader>
+                                <CardTitle>Kayıt Ol</CardTitle>
+                                <CardDescription>
+                                    Yeni bir hesap oluşturmak için bilgilerinizi girin.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="signup-fullname">Ad Soyad</label>
+                                    <Input
+                                        id="signup-fullname"
+                                        type="text"
+                                        placeholder="Adınız Soyadınız"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        disabled={loading}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="signup-email">E-posta</label>
+                                    <Input
+                                        id="signup-email"
+                                        type="email"
+                                        placeholder="ornek@mail.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        disabled={loading}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="signup-password">Şifre</label>
+                                    <Input
+                                        id="signup-password"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </CardContent>
+                            <CardFooter>
+                                <Button type="submit" className="w-full" disabled={loading}>
+                                    {loading ? 'Yükleniyor...' : 'Kayıt Ol'}
+                                </Button>
+                            </CardFooter>
+                        </form>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };
