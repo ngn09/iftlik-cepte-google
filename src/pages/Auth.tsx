@@ -1,11 +1,13 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/auth';
 
 const Auth = () => {
     const [loading, setLoading] = useState(false);
@@ -13,6 +15,14 @@ const Auth = () => {
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const { toast } = useToast();
+    const { session } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (session) {
+            navigate('/', { replace: true });
+        }
+    }, [session, navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
