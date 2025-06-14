@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -18,7 +19,7 @@ const healthRecordSchema = z.object({
   outcome: z.enum(['Tedavi Altında', 'İyileşti', 'Öldü']).default('Tedavi Altında'),
   notes: z.string().optional(),
   vetName: z.string().min(1, "Veteriner adı gerekli."),
-  imageUrls: z.string().optional(),
+  mediaUrls: z.string().optional(),
 });
 
 type HealthRecordFormData = z.infer<typeof healthRecordSchema>;
@@ -40,7 +41,7 @@ const HealthRecordDialog = ({ isOpen, onOpenChange, onSubmit, initialData }: Hea
       treatment: '',
       notes: '',
       vetName: '',
-      imageUrls: '',
+      mediaUrls: '',
       outcome: 'Tedavi Altında',
     },
   });
@@ -50,7 +51,7 @@ const HealthRecordDialog = ({ isOpen, onOpenChange, onSubmit, initialData }: Hea
       form.reset({
         ...initialData,
         outcome: initialData.outcome || 'Tedavi Altında',
-        imageUrls: initialData.imageUrls?.join(', ') || '',
+        mediaUrls: initialData.mediaUrls?.join(', ') || '',
       });
     } else {
       form.reset({
@@ -60,7 +61,7 @@ const HealthRecordDialog = ({ isOpen, onOpenChange, onSubmit, initialData }: Hea
         treatment: '',
         notes: '',
         vetName: '',
-        imageUrls: '',
+        mediaUrls: '',
         outcome: 'Tedavi Altında',
       });
     }
@@ -77,7 +78,7 @@ const HealthRecordDialog = ({ isOpen, onOpenChange, onSubmit, initialData }: Hea
       outcome: data.outcome,
       notes: data.notes,
       vetName: data.vetName,
-      imageUrls: data.imageUrls ? data.imageUrls.split(',').map(url => url.trim()).filter(url => url) : [],
+      mediaUrls: data.mediaUrls ? data.mediaUrls.split(',').map(url => url.trim()).filter(url => url) : [],
     };
     onSubmit(recordToSubmit);
   };
@@ -121,7 +122,7 @@ const HealthRecordDialog = ({ isOpen, onOpenChange, onSubmit, initialData }: Hea
             />
             <FormField control={form.control} name="notes" render={({ field }) => ( <FormItem><FormLabel>Notlar</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )} />
             <FormField control={form.control} name="vetName" render={({ field }) => ( <FormItem><FormLabel>Veteriner Hekim</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
-            <FormField control={form.control} name="imageUrls" render={({ field }) => ( <FormItem><FormLabel>Görsel URL'leri (virgülle ayırın)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+            <FormField control={form.control} name="mediaUrls" render={({ field }) => ( <FormItem><FormLabel>Görsel/Video URL'leri (virgülle ayırın)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
             <DialogFooter>
               <Button type="submit">Kaydet</Button>
             </DialogFooter>

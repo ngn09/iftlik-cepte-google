@@ -1,3 +1,4 @@
+
 export interface HealthRecord {
   id: number;
   animalTag: string;
@@ -6,7 +7,7 @@ export interface HealthRecord {
   treatment: string;
   notes?: string;
   vetName: string;
-  imageUrls?: string[];
+  mediaUrls?: string[];
   isArchived: boolean;
   outcome?: 'Tedavi Altında' | 'İyileşti' | 'Öldü';
 }
@@ -20,7 +21,7 @@ export const healthRecordsData: HealthRecord[] = [
     treatment: 'Antibiyotik tedavisi',
     notes: 'Sol arka meme lobunda şişlik ve kızarıklık.',
     vetName: 'Dr. Ayşe Yılmaz',
-    imageUrls: ['https://images.unsplash.com/photo-1465379944081-7f47de8d74ac?q=80&w=400&h=300&fit=crop'],
+    mediaUrls: ['https://images.unsplash.com/photo-1465379944081-7f47de8d74ac?q=80&w=400&h=300&fit=crop'],
     isArchived: true,
     outcome: 'İyileşti',
   },
@@ -32,7 +33,7 @@ export const healthRecordsData: HealthRecord[] = [
     treatment: 'Ağrı kesici ve bandaj',
     vetName: 'Dr. Ali Veli',
     notes: 'Sağ ön ayakta hassasiyet.',
-    imageUrls: [],
+    mediaUrls: [],
     isArchived: false,
     outcome: 'Tedavi Altında',
   },
@@ -43,7 +44,7 @@ export const healthRecordsData: HealthRecord[] = [
     diagnosis: 'Aşılama (Rutin Kontrol)',
     treatment: 'Aşı yapıldı (IBR-BVD)',
     vetName: 'Dr. Ayşe Yılmaz',
-    imageUrls: [],
+    mediaUrls: [],
     isArchived: true,
     outcome: 'İyileşti',
   },
@@ -54,7 +55,7 @@ export const healthRecordsData: HealthRecord[] = [
     diagnosis: 'Doğum sonrası kontrol',
     treatment: 'Vitamin takviyesi',
     vetName: 'Dr. Ayşe Yılmaz',
-    imageUrls: ['https://images.unsplash.com/photo-1582562124811-c0901d0a901?q=80&w=400&h=300&fit=crop'],
+    mediaUrls: ['https://images.unsplash.com/photo-1582562124811-c0901d0a901?q=80&w=400&h=300&fit=crop'],
     isArchived: false,
     outcome: 'İyileşti',
   },
@@ -66,7 +67,7 @@ export const healthRecordsData: HealthRecord[] = [
     treatment: 'Tedavi denendi, başarısız.',
     notes: 'Hayvan kurtarılamadı.',
     vetName: 'Dr. Ali Veli',
-    imageUrls: [],
+    mediaUrls: [],
     isArchived: true,
     outcome: 'Öldü',
   },
@@ -77,7 +78,7 @@ export const healthRecordsData: HealthRecord[] = [
     diagnosis: 'Planlı Aşı (Şap)',
     treatment: 'Aşı randevusu oluşturuldu.',
     vetName: 'Dr. Mehmet Kaya',
-    imageUrls: [],
+    mediaUrls: [],
     isArchived: false,
     outcome: 'Tedavi Altında',
   },
@@ -88,7 +89,7 @@ export const healthRecordsData: HealthRecord[] = [
     diagnosis: 'Aşılama (BVD)',
     treatment: 'BVD aşısı yapıldı.',
     vetName: 'Dr. Ayşe Yılmaz',
-    imageUrls: [],
+    mediaUrls: [],
     isArchived: false,
     outcome: 'İyileşti',
   },

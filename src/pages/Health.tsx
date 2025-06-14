@@ -1,6 +1,7 @@
+
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { HeartPulse, AlertCircle, Calendar, Plus, Archive, Image as ImageIcon, CheckCircle, Skull } from "lucide-react";
+import { HeartPulse, AlertCircle, Calendar, Plus, Archive, Image as ImageIcon, CheckCircle, Skull, Video } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HealthRecord, healthRecordsData } from '@/data/health';
@@ -9,6 +10,7 @@ import HealthRecordsTable from '@/components/HealthRecordsTable';
 import { toast } from "sonner";
 import VaccinationScheduleDialog from '@/components/VaccinationScheduleDialog';
 import RecordListDialog from '@/components/RecordListDialog';
+import MediaViewerDialog from '@/components/MediaViewerDialog';
 
 const Health = () => {
   const [records, setRecords] = React.useState<HealthRecord[]>(healthRecordsData);
@@ -17,6 +19,8 @@ const Health = () => {
   const [isVaccinationDialogOpen, setIsVaccinationDialogOpen] = React.useState(false);
   const [isListDialogOpen, setIsListDialogOpen] = React.useState(false);
   const [dialogContent, setDialogContent] = React.useState<{title: string; records: HealthRecord[]}>({ title: '', records: [] });
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = React.useState(false);
+  const [mediaToView, setMediaToView] = React.useState<string[]>([]);
 
   const activeRecords = records.filter(r => !r.isArchived);
   const archivedRecords = records.filter(r => r.isArchived);
@@ -24,9 +28,9 @@ const Health = () => {
   const deceasedRecords = records.filter(r => r.outcome === 'Öldü');
   const urgentRecords = activeRecords.filter(r => r.outcome === 'Tedavi Altında');
 
-  const allImages = records
-    .flatMap(r => r.imageUrls?.map(url => ({ recordId: r.id, url, animalTag: r.animalTag, date: r.date })) || [])
-    .filter(img => img.url);
+  const allMedia = records
+    .flatMap(r => r.mediaUrls?.map(url => ({ recordId: r.id, url, animalTag: r.animalTag, date: r.date })) || [])
+    .filter(media => media.url);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -81,6 +85,11 @@ const Health = () => {
       setIsListDialogOpen(true);
   };
 
+  const handleViewMedia = (urls: string[]) => {
+    setMediaToView(urls);
+    setIsMediaViewerOpen(true);
+  };
+
   return (
     <div>
       <HealthRecordDialog
@@ -104,6 +113,11 @@ const Health = () => {
         title={dialogContent.title}
         records={dialogContent.records}
         description="Aşağıda seçtiğiniz kategoriye ait kayıtlar listelenmektedir."
+      />
+      <MediaViewerDialog
+        isOpen={isMediaViewerOpen}
+        onOpenChange={setIsMediaViewerOpen}
+        mediaUrls={mediaToView}
       />
 
       <div className="flex justify-between items-center mb-6">
@@ -159,10 +173,7 @@ const Health = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{treatedRecords.length}</div>
-            <div className="flex justify-between items-center">
-                <p className="text-xs text-muted-foreground">İyileşen hayvan sayısı</p>
-                {treatedRecords.length > 0 && <RecordListDialog records={treatedRecords} title="Tedavisi Tamamlananlar" triggerText="Listeyi Gör" />}
-            </div>
+            <p className="text-xs text-muted-foreground">İyileşen hayvan sayısı</p>
           </CardContent>
         </Card>
         <Card onClick={() => handleCardClick('Ölen Hayvanlar', deceasedRecords)} className="cursor-pointer transition-colors hover:bg-muted/50">
@@ -172,10 +183,7 @@ const Health = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{deceasedRecords.length}</div>
-            <div className="flex justify-between items-center">
-                <p className="text-xs text-muted-foreground">Toplam kayıp</p>
-                {deceasedRecords.length > 0 && <RecordListDialog records={deceasedRecords} title="Ölen Hayvanlar" triggerText="Listeyi Gör" />}
-            </div>
+            <p className="text-xs text-muted-foreground">Toplam kayıp</p>
           </CardContent>
         </Card>
       </div>
@@ -198,24 +206,36 @@ const Health = () => {
             </Button>
         </div>
         <TabsContent value="active">
-            <HealthRecordsTable records={activeRecords} onEdit={handleEdit} onArchive={handleArchive} isArchive={false} />
+            <HealthRecordsTable records={activeRecords} onEdit={handleEdit} onArchive={handleArchive} isArchive={false} onViewMedia={handleViewMedia} />
         </TabsContent>
         <TabsContent value="archive">
-            <HealthRecordsTable records={archivedRecords} onEdit={handleEdit} onArchive={handleArchive} onRestore={handleRestore} onDelete={handleDelete} isArchive={true}/>
+            <HealthRecordsTable records={archivedRecords} onEdit={handleEdit} onArchive={handleArchive} onRestore={handleRestore} onDelete={handleDelete} isArchive={true} onViewMedia={handleViewMedia} />
         </TabsContent>
         <TabsContent value="gallery">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {allImages.length > 0 ? allImages.map((image) => (
-                    <div key={image.url + image.recordId} className="relative group">
-                        <img src={image.url} alt={`Sağlık kaydı görseli`} className="rounded-lg object-cover aspect-square w-full"/>
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-xs rounded-b-lg">
-                            <p className="font-bold">{image.animalTag}</p>
-                            <p>{new Date(image.date).toLocaleDateString('tr-TR')}</p>
+                {allMedia.length > 0 ? allMedia.map((media) => {
+                    const isVideo = /\.(mp4|webm|ogg)$/i.test(media.url);
+                    return (
+                        <div key={media.url + media.recordId} className="relative group cursor-pointer" onClick={() => handleViewMedia([media.url])}>
+                            {isVideo ? (
+                                <div className="relative w-full h-full">
+                                    <video src={media.url} className="rounded-lg object-cover aspect-square w-full bg-black"/>
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                        <Video className="h-12 w-12 text-white/80" />
+                                    </div>
+                                </div>
+                            ) : (
+                                <img src={media.url} alt={`Sağlık kaydı görseli`} className="rounded-lg object-cover aspect-square w-full"/>
+                            )}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-xs rounded-b-lg">
+                                <p className="font-bold">{media.animalTag}</p>
+                                <p>{new Date(media.date).toLocaleDateString('tr-TR')}</p>
+                            </div>
                         </div>
-                    </div>
-                )) : (
+                    )
+                }) : (
                     <div className="col-span-full text-center py-8 text-muted-foreground">
-                        Görüntülenecek görsel bulunamadı.
+                        Görüntülenecek medya bulunamadı.
                     </div>
                 )}
             </div>

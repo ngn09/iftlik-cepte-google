@@ -2,7 +2,7 @@
 import { HealthRecord } from "@/data/health";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Archive, Edit, Trash2, ArchiveRestore, Image as ImageIcon } from "lucide-react";
+import { Archive, Edit, Trash2, ArchiveRestore, Image as ImageIcon, Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface HealthRecordsTableProps {
@@ -12,9 +12,10 @@ interface HealthRecordsTableProps {
   onRestore?: (id: number) => void;
   onDelete?: (id: number) => void;
   isArchive: boolean;
+  onViewMedia: (urls: string[]) => void;
 }
 
-const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, isArchive }: HealthRecordsTableProps) => {
+const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, isArchive, onViewMedia }: HealthRecordsTableProps) => {
   return (
     <div className="rounded-md border">
         <Table>
@@ -37,7 +38,15 @@ const HealthRecordsTable = ({ records, onEdit, onArchive, onRestore, onDelete, i
                   <TableCell>
                     <div className="flex items-center gap-2">
                         {record.diagnosis}
-                        {record.imageUrls && record.imageUrls.length > 0 && <ImageIcon className="h-4 w-4 text-muted-foreground" />}
+                        {record.mediaUrls && record.mediaUrls.length > 0 && (
+                            <button onClick={() => onViewMedia(record.mediaUrls!)} className="p-1 rounded-md hover:bg-muted">
+                                {record.mediaUrls.some(url => /\.(mp4|webm|ogg)$/i.test(url)) ? (
+                                    <Camera className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                )}
+                            </button>
+                        )}
                     </div>
                   </TableCell>
                   <TableCell>
