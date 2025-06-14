@@ -106,6 +106,7 @@ const Health = () => {
         onEdit={handleEdit}
         onAddNew={handleAddNew}
         onArchive={handleArchive}
+        onViewMedia={handleViewMedia}
       />
       <RecordListDialog
         isOpen={isListDialogOpen}
@@ -246,3 +247,4 @@ const Health = () => {
 };
 
 export default Health;
+

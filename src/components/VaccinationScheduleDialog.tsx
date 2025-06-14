@@ -15,6 +15,7 @@ interface VaccinationScheduleDialogProps {
   onEdit: (record: HealthRecord) => void;
   onAddNew: () => void;
   onArchive: (id: number) => void;
+  onViewMedia: (urls: string[]) => void;
 }
 
 const VaccinationScheduleDialog = ({ 
@@ -24,7 +25,8 @@ const VaccinationScheduleDialog = ({
   completed, 
   onEdit, 
   onAddNew,
-  onArchive
+  onArchive,
+  onViewMedia
 }: VaccinationScheduleDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -45,10 +47,10 @@ const VaccinationScheduleDialog = ({
             </TabsTrigger>
           </TabsList>
           <TabsContent value="planned" className="mt-4">
-            <HealthRecordsTable records={planned} onEdit={onEdit} onArchive={onArchive} isArchive={false} />
+            <HealthRecordsTable records={planned} onEdit={onEdit} onArchive={onArchive} isArchive={false} onViewMedia={onViewMedia} />
           </TabsContent>
           <TabsContent value="completed" className="mt-4">
-            <HealthRecordsTable records={completed} onEdit={onEdit} onArchive={onArchive} isArchive={false} />
+            <HealthRecordsTable records={completed} onEdit={onEdit} onArchive={onArchive} isArchive={false} onViewMedia={onViewMedia} />
           </TabsContent>
         </Tabs>
       </DialogContent>
@@ -57,3 +59,4 @@ const VaccinationScheduleDialog = ({
 };
 
 export default VaccinationScheduleDialog;
+
