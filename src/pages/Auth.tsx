@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,6 +64,9 @@ const Auth = () => {
                 title: "Kayıt Başarılı",
                 description: "Lütfen e-postanızı kontrol ederek hesabınızı doğrulayın.",
             });
+            setEmail('');
+            setPassword('');
+            setFullName('');
         }
         setLoading(false);
     };
