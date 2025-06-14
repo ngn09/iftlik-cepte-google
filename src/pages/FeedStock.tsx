@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { feedStock as initialFeedStock, FeedItem } from "@/data/feedStock";
 import { animalGroups as initialAnimalGroups, rations as initialRations, Ration } from "@/data/rations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -233,6 +233,68 @@ const FeedStock = () => {
     }
   };
 
+  const handleArchiveRation = (rationId: number) => {
+    setRations(prevRations =>
+      prevRations.map(r =>
+        r.id === rationId ? { ...r, isArchived: true } : r
+      )
+    );
+  };
+
+  const handleRestoreRation = (rationId: number) => {
+    setRations(prevRations =>
+      prevRations.map(r => (r.id === rationId ? { ...r, isArchived: false } : r))
+    );
+  };
+
+  const handleDeleteRation = (rationId: number) => {
+    setRations(prevRations => prevRations.filter(r => r.id !== rationId));
+  };
+
+  const handleExportArchivedRations = () => {
+    const dataToExport = rations.filter(r => r.isArchived);
+    if (dataToExport.length === 0) {
+      alert("Dışa aktarılacak arşivlenmiş rasyon bulunmuyor.");
+      return;
+    }
+
+    const headers = ["ID", "Rasyon Adı", "Hayvan Grubu", "İçerik"];
+    const csvRows = [headers.join(',')];
+
+    dataToExport.forEach(ration => {
+      const group = animalGroups.find(g => g.id === ration.animalGroupId);
+      const itemsStr = ration.items.map(item => {
+        const feed = feedStockItems.find(f => f.id === item.feedStockId);
+        return `${feed ? feed.name : 'Bilinmeyen'}: ${item.amount}${feed ? ` ${feed.unit}` : ' kg'}`;
+      }).join(' | ');
+
+      const row = [
+        ration.id,
+        `"${ration.name.replace(/"/g, '""')}"`,
+        `"${group ? group.name : 'Bilinmeyen'}"`,
+        `"${itemsStr.replace(/"/g, '""')}"`
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "arsivlenmis-rasyonlar.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const activeRations = rations.filter(r => !r.isArchived).sort((a, b) => b.id - a.id);
+  const archivedRations = rations.filter(r => r.isArchived).sort((a, b) => b.id - a.id);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
@@ -242,7 +304,7 @@ const FeedStock = () => {
       <Tabs defaultValue="stock-list">
         <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
           <TabsTrigger value="stock-list">Stok Listesi</TabsTrigger>
-          <TabsTrigger value="ration-planning">Rasyon Planlama</TabsTrigger>
+          <TabsTrigger value="ration-planning">Rasyon Yönetimi</TabsTrigger>
         </TabsList>
         <TabsContent value="stock-list">
           <Card>
@@ -299,98 +361,148 @@ const FeedStock = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="ration-planning">
-           <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <div>
-                  <CardTitle>Rasyon Planlama</CardTitle>
-                  <CardDescription>Hayvan gruplarınıza göre rasyonları yönetin.</CardDescription>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                    <SelectTrigger className="w-full md:w-[280px]">
-                      <SelectValue placeholder="Hayvan Grubu Seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {animalGroups.map((group) => (
-                        <SelectItem key={group.id} value={group.id.toString()}>
-                          {group.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={handleOpenCreateRationDialog}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Rasyon Oluştur
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {filteredRations.length > 0 ? (
-                filteredRations.map((ration) => (
-                  <Card key={ration.id} className="w-full">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="cursor-pointer hover:underline" onClick={() => handleOpenEditRationDialog(ration)}>
-                            {ration.name}
-                        </CardTitle>
-                        <div className="flex items-center gap-6">
-                           <div className="flex items-center space-x-2">
-                            <Switch
-                              id={`auto-mode-${ration.id}`}
-                              checked={autoModeRations.includes(ration.id)}
-                              onCheckedChange={(checked) => handleAutoModeToggle(checked, ration.id)}
-                            />
-                            <Label htmlFor={`auto-mode-${ration.id}`}>Otomatik Düşüm</Label>
-                          </div>
-                          {selectedGroup && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-muted-foreground">Hayvan Sayısı:</span>
-                              <Badge variant="secondary" className="text-base font-bold">{selectedGroup.animalCount}</Badge>
+        <TabsContent value="ration-planning" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={handleOpenCreateRationDialog}>
+              <Plus className="mr-2 h-4 w-4" />
+              Rasyon Oluştur
+            </Button>
+          </div>
+          <Tabs defaultValue="active" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
+              <TabsTrigger value="active">Aktif Rasyonlar</TabsTrigger>
+              <TabsTrigger value="archive">Arşiv</TabsTrigger>
+            </TabsList>
+            <TabsContent value="active" className="pt-6">
+              <div className="space-y-6">
+                {activeRations.length > 0 ? (
+                  activeRations.map((ration) => {
+                    const rationGroup = animalGroups.find(g => g.id === ration.animalGroupId);
+                    return (
+                      <Card key={ration.id} className="w-full">
+                        <CardHeader>
+                          <div className="flex items-start justify-between gap-4">
+                            <CardTitle className="cursor-pointer hover:underline" onClick={() => handleOpenEditRationDialog(ration)}>
+                                {ration.name}
+                            </CardTitle>
+                            <div className="flex flex-col items-end gap-4">
+                              <div className="flex items-center gap-6">
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    id={`auto-mode-${ration.id}`}
+                                    checked={autoModeRations.includes(ration.id)}
+                                    onCheckedChange={(checked) => handleAutoModeToggle(checked, ration.id)}
+                                  />
+                                  <Label htmlFor={`auto-mode-${ration.id}`}>Otomatik Düşüm</Label>
+                                </div>
+                                {rationGroup && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground">Hayvan Sayısı:</span>
+                                    <Badge variant="secondary" className="text-base font-bold">{rationGroup.animalCount}</Badge>
+                                  </div>
+                                )}
+                              </div>
+                               <Button variant="outline" size="sm" onClick={() => handleArchiveRation(ration.id)}>
+                                <Archive className="mr-2 h-4 w-4" />
+                                Arşivle
+                              </Button>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Yem Adı</TableHead>
-                            <TableHead className="text-right">Miktar (kg/gün)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {ration.items.map((item, index) => {
-                            const feedInfo = feedStockItems.find(f => f.id === item.feedStockId);
-                            return (
-                              <TableRow key={index}>
-                                <TableCell className="font-medium">{feedInfo ? feedInfo.name : 'Bilinmeyen Yem'}</TableCell>
-                                <TableCell className="text-right">{item.amount}</TableCell>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Yem Adı</TableHead>
+                                <TableHead className="text-right">Miktar (kg/gün)</TableHead>
                               </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center h-64 gap-2 text-center border-2 border-dashed rounded-lg">
-                  <h3 className="text-lg font-semibold">Rasyon Bulunamadı</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Seçili grup için henüz bir rasyon oluşturulmamış.
-                  </p>
-                   <Button variant="secondary" className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    İlk Rasyonu Oluştur
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                            </TableHeader>
+                            <TableBody>
+                              {ration.items.map((item, index) => {
+                                const feedInfo = feedStockItems.find(f => f.id === item.feedStockId);
+                                return (
+                                  <TableRow key={index}>
+                                    <TableCell className="font-medium">{feedInfo ? feedInfo.name : 'Bilinmeyen Yem'}</TableCell>
+                                    <TableCell className="text-right">{item.amount}</TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-64 gap-2 text-center border-2 border-dashed rounded-lg">
+                    <h3 className="text-lg font-semibold">Aktif Rasyon Bulunamadı</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Henüz bir rasyon oluşturulmamış veya tüm rasyonlar arşivlenmiş.
+                    </p>
+                    <Button variant="secondary" className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      İlk Rasyonu Oluştur
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="archive" className="pt-6">
+               <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Arşivlenmiş Rasyonlar</CardTitle>
+                        <CardDescription>Arşivlenmiş rasyonları yönetin veya dışa aktarın.</CardDescription>
+                    </div>
+                    <Button variant="outline" onClick={handleExportArchivedRations} disabled={archivedRations.length === 0}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Dışa Aktar
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    {archivedRations.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Rasyon Adı</TableHead>
+                                    <TableHead>Hayvan Grubu</TableHead>
+                                    <TableHead className="text-right">İşlemler</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {archivedRations.map((ration) => {
+                                    const group = animalGroups.find(g => g.id === ration.animalGroupId);
+                                    return(
+                                    <TableRow key={ration.id}>
+                                        <TableCell className="font-medium">{ration.name}</TableCell>
+                                        <TableCell>{group ? group.name : "Bilinmeyen"}</TableCell>
+                                        <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <Button variant="outline" size="sm" onClick={() => handleRestoreRation(ration.id)}>
+                                                <ArchiveRestore /> Geri Yükle
+                                            </Button>
+                                            <Button variant="destructive" size="sm" onClick={() => handleDeleteRation(ration.id)}>
+                                                <Trash2 /> Kalıcı Olarak Sil
+                                            </Button>
+                                        </div>
+                                        </TableCell>
+                                    </TableRow>
+                                    )
+                                })}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                         <div className="flex flex-col items-center justify-center h-48 gap-2 text-center">
+                            <h3 className="text-lg font-semibold">Arşiv Boş</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Henüz arşivlenmiş bir rasyon bulunmuyor.
+                            </p>
+                        </div>
+                    )}
+                </CardContent>
+               </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
       <CreateRationDialog

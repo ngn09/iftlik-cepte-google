@@ -17,6 +17,7 @@ export interface Ration {
   animalGroupId: number;
   name:string;
   items: RationItem[];
+  isArchived?: boolean;
 }
 
 export const animalGroups: AnimalGroup[] = [
