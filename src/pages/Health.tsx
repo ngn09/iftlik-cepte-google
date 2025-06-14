@@ -7,59 +7,22 @@ import { HealthRecord, healthRecordsData } from '@/data/health';
 import HealthRecordDialog from '@/components/HealthRecordDialog';
 import HealthRecordsTable from '@/components/HealthRecordsTable';
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import VaccinationScheduleDialog from '@/components/VaccinationScheduleDialog';
-
-const RecordListDialog = ({ records, title, triggerText }: { records: HealthRecord[], title: string, triggerText: string }) => (
-    <Dialog>
-        <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="mt-2 text-xs h-auto py-1 px-2">
-                {triggerText}
-            </Button>
-        </DialogTrigger>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>{title}</DialogTitle>
-            </DialogHeader>
-            <div className="max-h-[60vh] overflow-y-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Küpe No</TableHead>
-                            <TableHead>Tarih</TableHead>
-                            <TableHead>Teşhis</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {records.length > 0 ? records.map(record => (
-                            <TableRow key={record.id}>
-                                <TableCell>{record.animalTag}</TableCell>
-                                <TableCell>{new Date(record.date).toLocaleDateString('tr-TR')}</TableCell>
-                                <TableCell>{record.diagnosis}</TableCell>
-                            </TableRow>
-                        )) : (
-                            <TableRow>
-                                <TableCell colSpan={3} className="text-center">Kayıt bulunamadı.</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-        </DialogContent>
-    </Dialog>
-);
+import RecordListDialog from '@/components/RecordListDialog';
 
 const Health = () => {
   const [records, setRecords] = React.useState<HealthRecord[]>(healthRecordsData);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedRecord, setSelectedRecord] = React.useState<HealthRecord | null>(null);
   const [isVaccinationDialogOpen, setIsVaccinationDialogOpen] = React.useState(false);
+  const [isListDialogOpen, setIsListDialogOpen] = React.useState(false);
+  const [dialogContent, setDialogContent] = React.useState<{title: string; records: HealthRecord[]}>({ title: '', records: [] });
 
   const activeRecords = records.filter(r => !r.isArchived);
   const archivedRecords = records.filter(r => r.isArchived);
   const treatedRecords = records.filter(r => r.outcome === 'İyileşti');
   const deceasedRecords = records.filter(r => r.outcome === 'Öldü');
+  const urgentRecords = activeRecords.filter(r => r.outcome === 'Tedavi Altında');
 
   const allImages = records
     .flatMap(r => r.imageUrls?.map(url => ({ recordId: r.id, url, animalTag: r.animalTag, date: r.date })) || [])
@@ -113,6 +76,11 @@ const Health = () => {
     toast.error("Kayıt kalıcı olarak silindi.");
   };
 
+  const handleCardClick = (title: string, records: HealthRecord[]) => {
+      setDialogContent({ title, records });
+      setIsListDialogOpen(true);
+  };
+
   return (
     <div>
       <HealthRecordDialog
@@ -130,31 +98,38 @@ const Health = () => {
         onAddNew={handleAddNew}
         onArchive={handleArchive}
       />
+      <RecordListDialog
+        isOpen={isListDialogOpen}
+        onOpenChange={setIsListDialogOpen}
+        title={dialogContent.title}
+        records={dialogContent.records}
+        description="Aşağıda seçtiğiniz kategoriye ait kayıtlar listelenmektedir."
+      />
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Sağlık</h1>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-6">
-        <Card>
+        <Card onClick={() => handleCardClick('Acil Uyarılar', urgentRecords)} className="cursor-pointer transition-colors hover:bg-muted/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Acil Uyarılar</CardTitle>
             <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">3</div>
+            <div className="text-2xl font-bold text-red-500">{urgentRecords.length}</div>
             <p className="text-xs text-muted-foreground">Acil müdahale gerekiyor</p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card onClick={() => handleCardClick('Aktif Vakalar', activeRecords)} className="cursor-pointer transition-colors hover:bg-muted/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tedavi Altında</CardTitle>
+            <CardTitle className="text-sm font-medium">Aktif Vakalar</CardTitle>
             <HeartPulse className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-500">{activeRecords.length}</div>
-            <p className="text-xs text-muted-foreground">Aktif tedavi süreci</p>
+            <p className="text-xs text-muted-foreground">Arşivlenmemiş tüm kayıtlar</p>
           </CardContent>
         </Card>
         
@@ -177,7 +152,7 @@ const Health = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card onClick={() => handleCardClick('Tedavisi Tamamlananlar', treatedRecords)} className="cursor-pointer transition-colors hover:bg-muted/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tedavisi Tamamlananlar</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -190,7 +165,7 @@ const Health = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card onClick={() => handleCardClick('Ölen Hayvanlar', deceasedRecords)} className="cursor-pointer transition-colors hover:bg-muted/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ölen Hayvanlar</CardTitle>
             <Skull className="h-4 w-4 text-destructive" />
