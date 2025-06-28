@@ -9,6 +9,127 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      animals: {
+        Row: {
+          breed: string
+          created_at: string
+          date_of_birth: string
+          farm_id: string
+          gender: Database["public"]["Enums"]["animal_gender"]
+          id: string
+          species: Database["public"]["Enums"]["animal_species"]
+          status: Database["public"]["Enums"]["animal_status"]
+          updated_at: string
+        }
+        Insert: {
+          breed: string
+          created_at?: string
+          date_of_birth: string
+          farm_id: string
+          gender: Database["public"]["Enums"]["animal_gender"]
+          id: string
+          species: Database["public"]["Enums"]["animal_species"]
+          status?: Database["public"]["Enums"]["animal_status"]
+          updated_at?: string
+        }
+        Update: {
+          breed?: string
+          created_at?: string
+          date_of_birth?: string
+          farm_id?: string
+          gender?: Database["public"]["Enums"]["animal_gender"]
+          id?: string
+          species?: Database["public"]["Enums"]["animal_species"]
+          status?: Database["public"]["Enums"]["animal_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "animals_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cameras: {
+        Row: {
+          created_at: string
+          farm_id: string
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["camera_status"]
+          stream_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          farm_id: string
+          id: string
+          name: string
+          status?: Database["public"]["Enums"]["camera_status"]
+          stream_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          farm_id?: string
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["camera_status"]
+          stream_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cameras_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          created_at: string
+          farm_id: string
+          id: number
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          farm_id: string
+          id?: number
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          farm_id?: string
+          id?: number
+          message?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       farms: {
         Row: {
           created_at: string
@@ -29,6 +150,159 @@ export type Database = {
           owner_id?: string
         }
         Relationships: []
+      }
+      feed_stock: {
+        Row: {
+          created_at: string
+          farm_id: string
+          id: number
+          last_updated: string
+          name: string
+          stock_amount: number
+          supplier: string | null
+          type: Database["public"]["Enums"]["feed_type"]
+          unit: Database["public"]["Enums"]["feed_unit"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          farm_id: string
+          id?: number
+          last_updated?: string
+          name: string
+          stock_amount?: number
+          supplier?: string | null
+          type: Database["public"]["Enums"]["feed_type"]
+          unit?: Database["public"]["Enums"]["feed_unit"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          farm_id?: string
+          id?: number
+          last_updated?: string
+          name?: string
+          stock_amount?: number
+          supplier?: string | null
+          type?: Database["public"]["Enums"]["feed_type"]
+          unit?: Database["public"]["Enums"]["feed_unit"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_stock_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_records: {
+        Row: {
+          animal_tag: string
+          created_at: string
+          date: string
+          diagnosis: string
+          farm_id: string
+          id: number
+          is_archived: boolean | null
+          notes: string | null
+          outcome: Database["public"]["Enums"]["health_outcome"] | null
+          treatment: string
+          updated_at: string
+          vet_name: string
+        }
+        Insert: {
+          animal_tag: string
+          created_at?: string
+          date: string
+          diagnosis: string
+          farm_id: string
+          id?: number
+          is_archived?: boolean | null
+          notes?: string | null
+          outcome?: Database["public"]["Enums"]["health_outcome"] | null
+          treatment: string
+          updated_at?: string
+          vet_name: string
+        }
+        Update: {
+          animal_tag?: string
+          created_at?: string
+          date?: string
+          diagnosis?: string
+          farm_id?: string
+          id?: number
+          is_archived?: boolean | null
+          notes?: string | null
+          outcome?: Database["public"]["Enums"]["health_outcome"] | null
+          treatment?: string
+          updated_at?: string
+          vet_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_records_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory: {
+        Row: {
+          category: Database["public"]["Enums"]["inventory_category"]
+          created_at: string
+          description: string | null
+          farm_id: string
+          id: number
+          last_maintenance: string | null
+          name: string
+          next_maintenance: string | null
+          purchase_date: string
+          status: Database["public"]["Enums"]["inventory_status"]
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["inventory_category"]
+          created_at?: string
+          description?: string | null
+          farm_id: string
+          id?: number
+          last_maintenance?: string | null
+          name: string
+          next_maintenance?: string | null
+          purchase_date: string
+          status?: Database["public"]["Enums"]["inventory_status"]
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["inventory_category"]
+          created_at?: string
+          description?: string | null
+          farm_id?: string
+          id?: number
+          last_maintenance?: string | null
+          name?: string
+          next_maintenance?: string | null
+          purchase_date?: string
+          status?: Database["public"]["Enums"]["inventory_status"]
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -82,7 +356,15 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      animal_gender: "Erkek" | "Dişi"
+      animal_species: "İnek" | "Koyun" | "Keçi" | "Tavuk" | "Diğer"
+      animal_status: "Aktif" | "Hamile" | "Hasta" | "Arşivlendi"
+      camera_status: "online" | "offline"
+      feed_type: "Tahıl" | "Kaba Yem" | "Konsantre" | "Katkı"
+      feed_unit: "kg" | "ton"
+      health_outcome: "Tedavi Altında" | "İyileşti" | "Öldü"
+      inventory_category: "Araç" | "Ekipman" | "Makine" | "Diğer"
+      inventory_status: "Aktif" | "Bakımda" | "Arızalı" | "Arşivlendi"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -197,6 +479,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      animal_gender: ["Erkek", "Dişi"],
+      animal_species: ["İnek", "Koyun", "Keçi", "Tavuk", "Diğer"],
+      animal_status: ["Aktif", "Hamile", "Hasta", "Arşivlendi"],
+      camera_status: ["online", "offline"],
+      feed_type: ["Tahıl", "Kaba Yem", "Konsantre", "Katkı"],
+      feed_unit: ["kg", "ton"],
+      health_outcome: ["Tedavi Altında", "İyileşti", "Öldü"],
+      inventory_category: ["Araç", "Ekipman", "Makine", "Diğer"],
+      inventory_status: ["Aktif", "Bakımda", "Arızalı", "Arşivlendi"],
+    },
   },
 } as const

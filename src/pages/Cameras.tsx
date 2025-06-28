@@ -3,15 +3,58 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, Camera, WifiOff, Settings } from "lucide-react";
 import { Button } from '@/components/ui/button';
-import { initialCameras, Camera as CameraType } from '@/data/cameras';
+import { useCameras } from '@/hooks/useCameras';
 import CameraSettingsDialog from '@/components/CameraSettingsDialog';
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Cameras = () => {
-  const [cameras, setCameras] = React.useState<CameraType[]>(initialCameras);
+  const { cameras, isLoading } = useCameras();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
   const onlineCameras = cameras.filter(c => c.status === 'online').length;
   const offlineCameras = cameras.filter(c => c.status === 'offline').length;
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Kameralar</h1>
+          <Button disabled>
+            <Settings />
+            Kamera Ayarları
+          </Button>
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-8 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Kamera Görüntüleri</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="aspect-video rounded-lg" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -19,7 +62,7 @@ const Cameras = () => {
         isOpen={isSettingsOpen} 
         onOpenChange={setIsSettingsOpen}
         cameras={cameras}
-        setCameras={setCameras}
+        setCameras={() => {}} // Bu prop artık gerekmiyor çünkü gerçek veri kullanıyoruz
       />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Kameralar</h1>

@@ -4,16 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeartPulse, AlertCircle, Calendar, Plus, Archive, CheckCircle, Skull } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HealthRecord, healthRecordsData } from '@/data/health';
+import { useHealthRecords } from '@/hooks/useHealthRecords';
 import HealthRecordDialog from '@/components/HealthRecordDialog';
 import HealthRecordsTable from '@/components/HealthRecordsTable';
 import { toast } from "sonner";
 import VaccinationScheduleDialog from '@/components/VaccinationScheduleDialog';
 import RecordListDialog from '@/components/RecordListDialog';
 import MediaViewerDialog from '@/components/MediaViewerDialog';
+import { Skeleton } from "@/components/ui/skeleton";
+import { HealthRecord } from '@/hooks/useHealthRecords';
 
 const Health = () => {
-  const [records, setRecords] = React.useState<HealthRecord[]>(healthRecordsData);
+  const { healthRecords, isLoading, addHealthRecord, updateHealthRecord } = useHealthRecords();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedRecord, setSelectedRecord] = React.useState<HealthRecord | null>(null);
   const [isVaccinationDialogOpen, setIsVaccinationDialogOpen] = React.useState(false);
@@ -22,16 +24,16 @@ const Health = () => {
   const [isMediaViewerOpen, setIsMediaViewerOpen] = React.useState(false);
   const [mediaToView, setMediaToView] = React.useState<string[]>([]);
 
-  const activeRecords = records.filter(r => !r.isArchived);
-  const archivedRecords = records.filter(r => r.isArchived);
-  const treatedRecords = records.filter(r => r.outcome === 'İyileşti');
-  const deceasedRecords = records.filter(r => r.outcome === 'Öldü');
+  const activeRecords = healthRecords.filter(r => !r.is_archived);
+  const archivedRecords = healthRecords.filter(r => r.is_archived);
+  const treatedRecords = healthRecords.filter(r => r.outcome === 'İyileşti');
+  const deceasedRecords = healthRecords.filter(r => r.outcome === 'Öldü');
   const urgentRecords = activeRecords.filter(r => r.outcome === 'Tedavi Altında');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const vaccinationRecords = records.filter(r => 
+  const vaccinationRecords = healthRecords.filter(r => 
     r.diagnosis.toLowerCase().includes('aşı') || 
     r.treatment.toLowerCase().includes('aşı')
   );
@@ -50,29 +52,35 @@ const Health = () => {
   };
 
   const handleSubmit = (data: HealthRecord) => {
-    const isEditing = records.some(r => r.id === data.id);
+    const isEditing = healthRecords.some(r => r.id === data.id);
     if (isEditing) {
-      setRecords(records.map(r => r.id === data.id ? data : r));
+      updateHealthRecord(data);
       toast.success("Kayıt başarıyla güncellendi.");
     } else {
-      setRecords([...records, data]);
+      addHealthRecord(data);
       toast.success("Yeni kayıt başarıyla eklendi.");
     }
     setIsDialogOpen(false);
   };
 
   const handleArchive = (id: number) => {
-    setRecords(records.map(r => r.id === id ? { ...r, isArchived: true } : r));
-    toast.info("Kayıt arşivlendi.");
+    const record = healthRecords.find(r => r.id === id);
+    if (record) {
+      updateHealthRecord({ ...record, is_archived: true });
+      toast.info("Kayıt arşivlendi.");
+    }
   };
 
   const handleRestore = (id: number) => {
-    setRecords(records.map(r => r.id === id ? { ...r, isArchived: false } : r));
-    toast.info("Kayıt arşivden geri yüklendi.");
+    const record = healthRecords.find(r => r.id === id);
+    if (record) {
+      updateHealthRecord({ ...record, is_archived: false });
+      toast.info("Kayıt arşivden geri yüklendi.");
+    }
   };
 
   const handleDelete = (id: number) => {
-    setRecords(records.filter(r => r.id !== id));
+    // Bu fonksiyon henüz implementasyon gerektiriyor
     toast.error("Kayıt kalıcı olarak silindi.");
   };
 
@@ -85,6 +93,40 @@ const Health = () => {
     setMediaToView(urls);
     setIsMediaViewerOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Sağlık</h1>
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-6">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-8 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-96 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>

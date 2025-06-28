@@ -6,117 +6,115 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnimalTable } from "@/components/AnimalTable";
-import { parseISO, format, differenceInMonths } from 'date-fns';
+import { useAnimals } from "@/hooks/useAnimals";
+import { differenceInMonths, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Label } from "@/components/ui/label";
-
-const mockAnimals = [
-  {
-    id: 'TR-34001',
-    species: 'Sığır',
-    breed: 'Holstein',
-    status: 'Aktif',
-    lastUpdated: '2025-06-14',
-    dateOfBirth: '2022-03-15',
-    gender: 'Dişi',
-  },
-  {
-    id: 'TR-35012',
-    species: 'Koyun',
-    breed: 'Merinos',
-    status: 'Aktif',
-    lastUpdated: '2025-06-12',
-    dateOfBirth: '2023-01-20',
-    gender: 'Erkek',
-  },
-  {
-    id: 'TR-06055',
-    species: 'Sığır',
-    breed: 'Angus',
-    status: 'Satıldı',
-    lastUpdated: '2025-05-28',
-    dateOfBirth: '2021-08-10',
-    gender: 'Erkek',
-  },
-  {
-    id: 'TR-16089',
-    species: 'Koyun',
-    breed: 'Akkaraman',
-    status: 'Arşivlendi',
-    lastUpdated: '2025-04-10',
-    dateOfBirth: '2020-05-01',
-    gender: 'Dişi',
-  },
-  {
-    id: 'TR-34002',
-    species: 'Sığır',
-    breed: 'Holstein',
-    status: 'Aktif',
-    lastUpdated: '2025-06-10',
-    dateOfBirth: '2025-03-01',
-    gender: 'Dişi',
-  },
-  {
-    id: 'TR-35013',
-    species: 'Koyun',
-    breed: 'Merinos',
-    status: 'Aktif',
-    lastUpdated: '2025-06-11',
-    dateOfBirth: '2024-11-15',
-    gender: 'Erkek',
-  },
-];
-
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Animals = () => {
+  const { animals, isLoading } = useAnimals();
   const [filter, setFilter] = useState('');
-  const [calfAgeLimit, setCalfAgeLimit] = useState(12); // months
-
-  const getLatestUpdateDate = () => {
-    if (mockAnimals.length === 0) return new Date();
-    const dates = mockAnimals.map(a => parseISO(a.lastUpdated));
-    return new Date(Math.max.apply(null, dates as any));
-  };
-
-  const latestUpdateDate = getLatestUpdateDate();
+  const [calfAgeLimit, setCalfAgeLimit] = useState(12);
 
   const getAgeInMonths = (dob: string): number => {
     return differenceInMonths(new Date(), parseISO(dob));
   };
 
-  const animalsForStats = mockAnimals.filter(a => a.status !== 'Arşivlendi');
-  
-  const totalAnimalsStat = animalsForStats.length;
-  const maleAnimalsStat = animalsForStats.filter(a => a.gender === 'Erkek').length;
-  const femaleAnimalsStat = animalsForStats.filter(a => a.gender === 'Dişi').length;
-  const calfCountStat = animalsForStats.filter(a => getAgeInMonths(a.dateOfBirth) <= calfAgeLimit).length;
+  const activeAnimals = animals.filter(a => a.status !== 'Arşivlendi');
+  const archivedAnimals = animals.filter(a => a.status === 'Arşivlendi');
 
-  const filteredAnimals = mockAnimals.filter(animal => 
+  const filteredActiveAnimals = activeAnimals.filter(animal => 
     animal.id.toLowerCase().includes(filter.toLowerCase()) ||
     animal.breed.toLowerCase().includes(filter.toLowerCase()) ||
     animal.species.toLowerCase().includes(filter.toLowerCase())
   );
 
-  const activeAnimals = filteredAnimals.filter(a => a.status !== 'Arşivlendi');
-  const archivedAnimals = filteredAnimals.filter(a => a.status === 'Arşivlendi');
+  const filteredArchivedAnimals = archivedAnimals.filter(animal => 
+    animal.id.toLowerCase().includes(filter.toLowerCase()) ||
+    animal.breed.toLowerCase().includes(filter.toLowerCase()) ||
+    animal.species.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const getLatestUpdateDate = () => {
+    if (animals.length === 0) return new Date();
+    const dates = animals.map(a => parseISO(a.updated_at));
+    return new Date(Math.max.apply(null, dates as any));
+  };
+
+  const latestUpdateDate = getLatestUpdateDate();
+
+  const totalAnimals = activeAnimals.length;
+  const maleAnimals = activeAnimals.filter(a => a.gender === 'Erkek').length;
+  const femaleAnimals = activeAnimals.filter(a => a.gender === 'Dişi').length;
+  const calfCount = activeAnimals.filter(a => getAgeInMonths(a.date_of_birth) <= calfAgeLimit).length;
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Hayvanlar</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" disabled>
+              <FileText className="h-4 w-4 mr-2" />
+              PDF Aktar
+            </Button>
+            <Button variant="outline" disabled>
+              <FileText className="h-4 w-4 mr-2" />
+              Excel Aktar
+            </Button>
+            <Button disabled>
+              <Plus className="h-4 w-4" />
+              Yeni Hayvan Ekle
+            </Button>
+          </div>
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-96 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Hayvanlar</h1>
         <div className="flex items-center gap-2">
-            <Button variant="outline">
-                <FileText className="h-4 w-4 mr-2" />
-                PDF Aktar
-            </Button>
-            <Button variant="outline">
-                <FileText className="h-4 w-4 mr-2" />
-                Excel Aktar
-            </Button>
-            <Button>
-                <Plus className="h-4 w-4" />
-                Yeni Hayvan Ekle
-            </Button>
+          <Button variant="outline">
+            <FileText className="h-4 w-4 mr-2" />
+            PDF Aktar
+          </Button>
+          <Button variant="outline">
+            <FileText className="h-4 w-4 mr-2" />
+            Excel Aktar
+          </Button>
+          <Button>
+            <Plus className="h-4 w-4" />
+            Yeni Hayvan Ekle
+          </Button>
         </div>
       </div>
       
@@ -127,7 +125,7 @@ const Animals = () => {
             <PawPrint className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalAnimalsStat}</div>
+            <div className="text-2xl font-bold">{totalAnimals}</div>
             <p className="text-xs text-muted-foreground">Aktif hayvan sayısı</p>
           </CardContent>
         </Card>
@@ -138,7 +136,7 @@ const Animals = () => {
             <PawPrint className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{maleAnimalsStat}</div>
+            <div className="text-2xl font-bold">{maleAnimals}</div>
             <p className="text-xs text-muted-foreground">Toplam erkek hayvan</p>
           </CardContent>
         </Card>
@@ -149,7 +147,7 @@ const Animals = () => {
             <PawPrint className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{femaleAnimalsStat}</div>
+            <div className="text-2xl font-bold">{femaleAnimals}</div>
             <p className="text-xs text-muted-foreground">Toplam dişi hayvan</p>
           </CardContent>
         </Card>
@@ -160,7 +158,7 @@ const Animals = () => {
             <PawPrint className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{calfCountStat}</div>
+            <div className="text-2xl font-bold">{calfCount}</div>
             <div className="flex items-center gap-2 mt-1">
               <Label htmlFor="calf-age" className="text-xs text-muted-foreground whitespace-nowrap">Yaş sınırı (ay):</Label>
               <Input
@@ -181,9 +179,11 @@ const Animals = () => {
           <div>
             <CardTitle className="flex items-baseline">
               Hayvan Listesi
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                (Son Güncelleme: {format(latestUpdateDate, 'dd MMMM yyyy', { locale: tr })})
-              </span>
+              {animals.length > 0 && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  (Son Güncelleme: {format(latestUpdateDate, 'dd MMMM yyyy', { locale: tr })})
+                </span>
+              )}
             </CardTitle>
             <CardDescription>Çiftliğinizdeki hayvanları yönetin.</CardDescription>
           </div>
@@ -198,18 +198,18 @@ const Animals = () => {
           </div>
         </CardHeader>
         <CardContent>
-           <Tabs defaultValue="active">
+          <Tabs defaultValue="active">
             <TabsList className="grid w-full grid-cols-2 md:w-1/3">
-              <TabsTrigger value="active">Aktif ({activeAnimals.length})</TabsTrigger>
-              <TabsTrigger value="archived">Arşiv ({archivedAnimals.length})</TabsTrigger>
+              <TabsTrigger value="active">Aktif ({filteredActiveAnimals.length})</TabsTrigger>
+              <TabsTrigger value="archived">Arşiv ({filteredArchivedAnimals.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="active" className="mt-4">
-              <AnimalTable animals={activeAnimals} />
+              <AnimalTable animals={filteredActiveAnimals} />
             </TabsContent>
             <TabsContent value="archived" className="mt-4">
-              <AnimalTable animals={archivedAnimals} />
+              <AnimalTable animals={filteredArchivedAnimals} />
             </TabsContent>
-           </Tabs>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
