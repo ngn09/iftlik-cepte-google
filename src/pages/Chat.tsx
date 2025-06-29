@@ -20,47 +20,88 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Message {
-  user: string;
-  text: string;
-  time: string;
-  avatar: string;
-  avatarBg: string;
-  recipient?: string; // Herkese açık için undefined, özel için kullanıcı adı
+  id: number;
+  user_id: string;
+  message: string;
+  created_at: string;
+  profiles?: {
+    full_name: string;
+  };
 }
 
-interface ArchivedChat {
-  date: string;
-  messages: Message[];
+interface User {
+  id: string;
+  full_name: string;
+  status: string;
 }
-
-const initialMessages: Message[] = [
-  {
-    user: 'Veteriner Dr. Ahmet',
-    text: 'Bugün 3 numaralı sığırın muayenesini yaptım, durumu iyi.',
-    time: '10:30',
-    avatar: 'V',
-    avatarBg: 'bg-blue-500',
-  },
-  {
-    user: 'Bakıcı Mehmet',
-    text: 'Teşekkürler doktor, notlarını aldım.',
-    time: '10:35',
-    avatar: 'B',
-    avatarBg: 'bg-green-500',
-  },
-];
-
-const activeUsers = ['Yönetici', 'Veteriner Dr. Ahmet', 'Bakıcı Mehmet', 'Bakıcı Ayşe', 'Veteriner Dr. Zeynep'];
 
 const Chat = () => {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [newMessage, setNewMessage] = useState("");
-  const [archivedChats, setArchivedChats] = useState<ArchivedChat[]>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [messageScope, setMessageScope] = useState('public'); // 'public' veya 'private'
-  const [privateRecipient, setPrivateRecipient] = useState('');
+  const queryClient = useQueryClient();
+
+  // Fetch messages
+  const { data: messages = [], isLoading: messagesLoading } = useQuery({
+    queryKey: ['chat-messages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select(`
+          *,
+          profiles:user_id (
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data as Message[];
+    },
+  });
+
+  // Fetch active users
+  const { data: activeUsers = [] } = useQuery({
+    queryKey: ['active-users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, status')
+        .eq('status', 'Aktif');
+      
+      if (error) throw error;
+      return data as User[];
+    },
+  });
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (message: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Kullanıcı oturum açmamış');
+
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          message,
+          user_id: user.id,
+          farm_id: 'default' // Bu değer gerçek farm_id ile değiştirilmeli
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
+      setNewMessage('');
+      toast.success("Mesaj gönderildi");
+    },
+    onError: (error) => {
+      toast.error("Mesaj gönderilemedi: " + error.message);
+    }
+  });
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -71,42 +112,27 @@ const Chat = () => {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() === '') return;
-
-    if (messageScope === 'private' && !privateRecipient) {
-      toast.error("Lütfen özel mesaj için bir alıcı seçin.");
-      return;
-    }
-
-    const newMsg: Message = {
-      user: 'Siz',
-      text: newMessage,
-      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-      avatar: 'S',
-      avatarBg: 'bg-purple-500',
-      recipient: messageScope === 'private' ? privateRecipient : undefined,
-    };
-
-    setMessages([...messages, newMsg]);
-    setNewMessage('');
-    if (messageScope === 'private') {
-      setPrivateRecipient('');
-    }
+    sendMessageMutation.mutate(newMessage);
   };
 
   const handleArchiveChat = () => {
-    if (messages.every(msg => initialMessages.includes(msg)) && messages.length === initialMessages.length) {
-      toast.info("Arşivlenecek yeni mesaj bulunmuyor.");
+    if (messages.length === 0) {
+      toast.info("Arşivlenecek mesaj bulunmuyor.");
       return;
     }
     
-    const newArchive: ArchivedChat = {
-      date: new Date().toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }),
-      messages: [...messages],
-    };
+    // Bu fonksiyon gelecekte genişletilebilir
+    toast.success("Sohbet arşivleme özelliği yakında eklenecek.");
+  };
 
-    setArchivedChats(prev => [newArchive, ...prev]);
-    setMessages(initialMessages);
-    toast.success("Sohbet başarıyla arşivlendi.");
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const getAvatarColor = (name: string) => {
+    const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-red-500', 'bg-yellow-500', 'bg-indigo-500'];
+    const index = name.length % colors.length;
+    return colors[index];
   };
 
   return (
@@ -114,59 +140,13 @@ const Chat = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Sohbet</h1>
         <div className="flex items-center gap-4">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Archive className="mr-2" /> Arşivi Görüntüle ({archivedChats.length})
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
-              <DialogHeader>
-                <DialogTitle>Arşivlenmiş Sohbetler</DialogTitle>
-                <DialogDescription>
-                  Geçmiş sohbet kayıtlarınızı buradan görüntüleyebilirsiniz.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex-grow overflow-y-auto pr-4 -mr-4">
-                {archivedChats.length > 0 ? (
-                  <div className="space-y-6">
-                    {archivedChats.map((archive, archiveIndex) => (
-                      <Card key={archiveIndex}>
-                        <CardHeader>
-                          <CardTitle className="text-base flex items-center gap-2 text-muted-foreground font-medium">
-                            <Clock className="h-4 w-4" />
-                            <span>Arşivlenme Tarihi: {archive.date}</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 max-h-[20rem] overflow-y-auto">
-                           {archive.messages.map((msg, msgIndex) => (
-                            <div key={msgIndex} className="flex items-start gap-3">
-                                <div className={`w-8 h-8 ${msg.avatarBg} rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0`}>
-                                {msg.avatar}
-                                </div>
-                                <div>
-                                <p className="text-sm font-medium">{msg.user}</p>
-                                <p className="text-sm text-gray-600 break-words">{msg.text}</p>
-                                <p className="text-xs text-gray-400 mt-1">{msg.time}</p>
-                                </div>
-                            </div>
-                           ))}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-muted-foreground">Henüz arşivlenmiş sohbet yok.</p>
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button variant="outline" onClick={handleArchiveChat}>
+            <Archive className="mr-2" /> Arşivi Görüntüle (0)
+          </Button>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
-            <span>5 kişi çevrimiçi</span>
+            <span>{activeUsers.length} kişi çevrimiçi</span>
           </div>
         </div>
       </div>
@@ -178,12 +158,16 @@ const Chat = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {activeUsers.map((user, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm">{user}</span>
-                </div>
-              ))}
+              {activeUsers.length > 0 ? (
+                activeUsers.map((user) => (
+                  <div key={user.id} className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">{user.full_name}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">Aktif kullanıcı bulunmuyor</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -192,71 +176,60 @@ const Chat = () => {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Genel Sohbet</CardTitle>
             <Button variant="ghost" size="sm" onClick={handleArchiveChat}>
-                <Archive className="mr-2" />
-                Sohbeti Arşivle
+              <Archive className="mr-2" />
+              Sohbeti Arşivle
             </Button>
           </CardHeader>
           <CardContent className="flex flex-col h-[30rem]">
             <div ref={chatContainerRef} className="flex-grow bg-gray-50 rounded-lg p-4 mb-4 overflow-y-auto">
-              <div className="space-y-4">
-                {messages.map((msg, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className={`w-8 h-8 ${msg.avatarBg} rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0`}>
-                      {msg.avatar}
+              {messagesLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-sm text-muted-foreground">Mesajlar yükleniyor...</p>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-sm text-muted-foreground">Henüz mesaj bulunmuyor. İlk mesajı gönderin!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((msg) => (
+                    <div key={msg.id} className="flex items-start gap-3">
+                      <div className={`w-8 h-8 ${getAvatarColor(msg.profiles?.full_name || 'User')} rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                        {getInitials(msg.profiles?.full_name || 'User')}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{msg.profiles?.full_name || 'Kullanıcı'}</p>
+                        <p className="text-sm text-gray-600 break-words">{msg.message}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(msg.created_at).toLocaleTimeString('tr-TR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {msg.user}
-                        {msg.recipient && <span className="text-muted-foreground font-normal"> {'->'} {msg.recipient}</span>}
-                      </p>
-                      <p className="text-sm text-gray-600 break-words">{msg.text}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {msg.time}
-                        {msg.recipient && <span className="ml-2 text-yellow-600 text-xs font-semibold">[Özel Mesaj]</span>}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
             
-            <form onSubmit={handleSendMessage} className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <Input
-                  type="text" 
-                  placeholder="Mesajınızı yazın..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  autoComplete="off"
-                  className="flex-grow"
-                />
-                <Button type="submit" size="icon">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex gap-2 items-center">
-                <Select value={messageScope} onValueChange={setMessageScope}>
-                  <SelectTrigger className="w-auto flex-grow sm:flex-grow-0 sm:w-[150px]">
-                    <SelectValue placeholder="Gönderim türü" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public">Herkese</SelectItem>
-                    <SelectItem value="private">Özel Mesaj</SelectItem>
-                  </SelectContent>
-                </Select>
-                {messageScope === 'private' && (
-                  <Select value={privateRecipient} onValueChange={setPrivateRecipient}>
-                    <SelectTrigger className="w-auto flex-grow sm:flex-grow-0 sm:w-[200px]">
-                      <SelectValue placeholder="Alıcı seçin..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeUsers.map(user => (
-                        <SelectItem key={user} value={user}>{user}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <Input
+                type="text" 
+                placeholder="Mesajınızı yazın..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                autoComplete="off"
+                className="flex-grow"
+                disabled={sendMessageMutation.isPending}
+              />
+              <Button 
+                type="submit" 
+                size="icon"
+                disabled={sendMessageMutation.isPending}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
             </form>
           </CardContent>
         </Card>
