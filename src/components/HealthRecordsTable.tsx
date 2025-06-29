@@ -1,9 +1,21 @@
 
-import { HealthRecord } from "@/data/health";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Archive, Edit, Trash2, ArchiveRestore, Image as ImageIcon, Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+interface HealthRecord {
+  id: number;
+  animalTag: string;
+  date: string;
+  diagnosis: string;
+  treatment: string;
+  notes?: string;
+  vetName: string;
+  mediaUrls?: string[];
+  isArchived: boolean;
+  outcome?: 'Tedavi Altında' | 'İyileşti' | 'Öldü';
+}
 
 interface HealthRecordsTableProps {
   records: HealthRecord[];

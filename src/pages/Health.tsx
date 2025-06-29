@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeartPulse, AlertCircle, Calendar, Plus, Archive, CheckCircle, Skull } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useHealthRecords } from '@/hooks/useHealthRecords';
+import { useHealthRecords, HealthRecord } from '@/hooks/useHealthRecords';
 import HealthRecordDialog from '@/components/HealthRecordDialog';
 import HealthRecordsTable from '@/components/HealthRecordsTable';
 import { toast } from "sonner";
@@ -12,28 +12,55 @@ import VaccinationScheduleDialog from '@/components/VaccinationScheduleDialog';
 import RecordListDialog from '@/components/RecordListDialog';
 import MediaViewerDialog from '@/components/MediaViewerDialog';
 import { Skeleton } from "@/components/ui/skeleton";
-import { HealthRecord } from '@/hooks/useHealthRecords';
+
+// Transform function to convert Supabase HealthRecord to component HealthRecord
+const transformHealthRecord = (record: HealthRecord): any => ({
+  id: record.id,
+  animalTag: record.animal_tag,
+  date: record.date,
+  diagnosis: record.diagnosis,
+  treatment: record.treatment,
+  notes: record.notes,
+  vetName: record.vet_name,
+  mediaUrls: [],
+  isArchived: record.is_archived || false,
+  outcome: record.outcome,
+});
+
+// Transform function from component HealthRecord to Supabase HealthRecord
+const transformToSupabaseRecord = (record: any): Partial<HealthRecord> => ({
+  animal_tag: record.animalTag || record.animal_tag,
+  date: record.date,
+  diagnosis: record.diagnosis,
+  treatment: record.treatment,
+  notes: record.notes,
+  vet_name: record.vetName || record.vet_name,
+  outcome: record.outcome,
+  is_archived: record.isArchived !== undefined ? record.isArchived : record.is_archived,
+});
 
 const Health = () => {
   const { healthRecords, isLoading, addHealthRecord, updateHealthRecord } = useHealthRecords();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedRecord, setSelectedRecord] = React.useState<HealthRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = React.useState<any>(null);
   const [isVaccinationDialogOpen, setIsVaccinationDialogOpen] = React.useState(false);
   const [isListDialogOpen, setIsListDialogOpen] = React.useState(false);
-  const [dialogContent, setDialogContent] = React.useState<{title: string; records: HealthRecord[]}>({ title: '', records: [] });
+  const [dialogContent, setDialogContent] = React.useState<{title: string; records: any[]}>({ title: '', records: [] });
   const [isMediaViewerOpen, setIsMediaViewerOpen] = React.useState(false);
   const [mediaToView, setMediaToView] = React.useState<string[]>([]);
 
-  const activeRecords = healthRecords.filter(r => !r.is_archived);
-  const archivedRecords = healthRecords.filter(r => r.is_archived);
-  const treatedRecords = healthRecords.filter(r => r.outcome === 'İyileşti');
-  const deceasedRecords = healthRecords.filter(r => r.outcome === 'Öldü');
+  // Transform records for components
+  const transformedRecords = healthRecords.map(transformHealthRecord);
+  const activeRecords = transformedRecords.filter(r => !r.isArchived);
+  const archivedRecords = transformedRecords.filter(r => r.isArchived);
+  const treatedRecords = transformedRecords.filter(r => r.outcome === 'İyileşti');
+  const deceasedRecords = transformedRecords.filter(r => r.outcome === 'Öldü');
   const urgentRecords = activeRecords.filter(r => r.outcome === 'Tedavi Altında');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const vaccinationRecords = healthRecords.filter(r => 
+  const vaccinationRecords = transformedRecords.filter(r => 
     r.diagnosis.toLowerCase().includes('aşı') || 
     r.treatment.toLowerCase().includes('aşı')
   );
@@ -46,18 +73,20 @@ const Health = () => {
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (record: HealthRecord) => {
+  const handleEdit = (record: any) => {
     setSelectedRecord(record);
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (data: HealthRecord) => {
+  const handleSubmit = (data: any) => {
+    const transformedData = transformToSupabaseRecord(data);
     const isEditing = healthRecords.some(r => r.id === data.id);
+    
     if (isEditing) {
-      updateHealthRecord(data);
+      updateHealthRecord({ id: data.id, ...transformedData });
       toast.success("Kayıt başarıyla güncellendi.");
     } else {
-      addHealthRecord(data);
+      addHealthRecord(transformedData as any);
       toast.success("Yeni kayıt başarıyla eklendi.");
     }
     setIsDialogOpen(false);
@@ -84,7 +113,7 @@ const Health = () => {
     toast.error("Kayıt kalıcı olarak silindi.");
   };
 
-  const handleCardClick = (title: string, records: HealthRecord[]) => {
+  const handleCardClick = (title: string, records: any[]) => {
       setDialogContent({ title, records });
       setIsListDialogOpen(true);
   };

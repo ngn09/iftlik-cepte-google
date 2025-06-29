@@ -61,8 +61,8 @@ const Cameras = () => {
       <CameraSettingsDialog 
         isOpen={isSettingsOpen} 
         onOpenChange={setIsSettingsOpen}
-        cameras={cameras}
-        setCameras={() => {}} // Bu prop artık gerekmiyor çünkü gerçek veri kullanıyoruz
+        cameras={[]}
+        setCameras={() => {}}
       />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Kameralar</h1>
