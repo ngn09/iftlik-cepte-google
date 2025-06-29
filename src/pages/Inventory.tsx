@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -6,10 +7,12 @@ import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useInventory } from "@/hooks/useInventory";
 import { Skeleton } from "@/components/ui/skeleton";
+import InventoryFormDialog from "@/components/InventoryFormDialog";
 
 const Inventory = () => {
   const navigate = useNavigate();
   const { inventory, isLoading } = useInventory();
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -63,9 +66,14 @@ const Inventory = () => {
 
   return (
     <div>
+      <InventoryFormDialog 
+        isOpen={isFormDialogOpen}
+        onOpenChange={setIsFormDialogOpen}
+      />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Demirbaş Yönetimi</h1>
-        <Button>
+        <Button onClick={() => setIsFormDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Yeni Demirbaş Ekle
         </Button>

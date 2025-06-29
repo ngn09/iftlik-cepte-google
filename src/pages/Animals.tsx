@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PawPrint, Plus, FileText, Filter } from "lucide-react";
@@ -11,11 +10,13 @@ import { differenceInMonths, parseISO, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import AnimalFormDialog from "@/components/AnimalFormDialog";
 
 const Animals = () => {
   const { animals, isLoading } = useAnimals();
   const [filter, setFilter] = useState('');
   const [calfAgeLimit, setCalfAgeLimit] = useState(12);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
 
   const getAgeInMonths = (dob: string): number => {
     return differenceInMonths(new Date(), parseISO(dob));
@@ -48,6 +49,16 @@ const Animals = () => {
   const maleAnimals = activeAnimals.filter(a => a.gender === 'Erkek').length;
   const femaleAnimals = activeAnimals.filter(a => a.gender === 'Dişi').length;
   const calfCount = activeAnimals.filter(a => getAgeInMonths(a.date_of_birth) <= calfAgeLimit).length;
+
+  const handleExportPDF = () => {
+    // PDF export functionality will be implemented later
+    console.log("PDF export functionality");
+  };
+
+  const handleExportExcel = () => {
+    // Excel export functionality will be implemented later
+    console.log("Excel export functionality");
+  };
 
   if (isLoading) {
     return (
@@ -100,18 +111,23 @@ const Animals = () => {
 
   return (
     <div>
+      <AnimalFormDialog 
+        isOpen={isFormDialogOpen}
+        onOpenChange={setIsFormDialogOpen}
+      />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Hayvanlar</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportPDF}>
             <FileText className="h-4 w-4 mr-2" />
             PDF Aktar
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportExcel}>
             <FileText className="h-4 w-4 mr-2" />
             Excel Aktar
           </Button>
-          <Button>
+          <Button onClick={() => setIsFormDialogOpen(true)}>
             <Plus className="h-4 w-4" />
             Yeni Hayvan Ekle
           </Button>
