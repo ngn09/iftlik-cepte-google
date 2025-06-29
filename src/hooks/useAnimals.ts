@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +57,21 @@ export const useAnimals = () => {
     }
   });
 
+  // Callback destekli addAnimal fonksiyonu
+  const addAnimalWithCallback = (
+    animalData: Omit<Animal, 'farm_id' | 'created_at' | 'updated_at'>, 
+    callbacks?: { onSuccess?: () => void; onError?: (error: any) => void }
+  ) => {
+    addAnimal(animalData, {
+      onSuccess: () => {
+        callbacks?.onSuccess?.();
+      },
+      onError: (error) => {
+        callbacks?.onError?.(error);
+      }
+    });
+  };
+
   const { mutate: updateAnimal, isPending: isUpdating } = useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<Animal> & { id: string }) => {
       const { error } = await supabase.from('animals').update(updateData).eq('id', id);
@@ -91,7 +105,7 @@ export const useAnimals = () => {
     isLoading, 
     isError, 
     error, 
-    addAnimal, 
+    addAnimal: addAnimalWithCallback, 
     isAdding,
     updateAnimal,
     isUpdating,

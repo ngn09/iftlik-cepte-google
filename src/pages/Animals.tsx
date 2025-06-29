@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PawPrint, Plus, FileText, Filter } from "lucide-react";
+import { PawPrint, Plus, FileText, Filter, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,12 +11,14 @@ import { tr } from 'date-fns/locale';
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import AnimalFormDialog from "@/components/AnimalFormDialog";
+import BulkAnimalImportDialog from "@/components/BulkAnimalImportDialog";
 
 const Animals = () => {
   const { animals, isLoading } = useAnimals();
   const [filter, setFilter] = useState('');
   const [calfAgeLimit, setCalfAgeLimit] = useState(12);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   const getAgeInMonths = (dob: string): number => {
     return differenceInMonths(new Date(), parseISO(dob));
@@ -67,6 +69,10 @@ const Animals = () => {
           <h1 className="text-3xl font-bold">Hayvanlar</h1>
           <div className="flex items-center gap-2">
             <Button variant="outline" disabled>
+              <Upload className="h-4 w-4 mr-2" />
+              Toplu İçe Aktar
+            </Button>
+            <Button variant="outline" disabled>
               <FileText className="h-4 w-4 mr-2" />
               PDF Aktar
             </Button>
@@ -116,9 +122,18 @@ const Animals = () => {
         onOpenChange={setIsFormDialogOpen}
       />
       
+      <BulkAnimalImportDialog
+        isOpen={isBulkImportOpen}
+        onOpenChange={setIsBulkImportOpen}
+      />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Hayvanlar</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setIsBulkImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Toplu İçe Aktar
+          </Button>
           <Button variant="outline" onClick={handleExportPDF}>
             <FileText className="h-4 w-4 mr-2" />
             PDF Aktar
