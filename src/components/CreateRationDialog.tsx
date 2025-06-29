@@ -3,7 +3,6 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import * as z from "zod";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,43 +22,55 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { AnimalGroup, Ration } from "@/data/rations";
-import { FeedItem } from "@/data/feedStock";
-import { Plus, Trash2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Plus } from "lucide-react";
+import { FeedStockItem } from "@/hooks/useFeedStock";
 
 const rationFormSchema = z.object({
   name: z.string().min(2, { message: "Rasyon adı en az 2 karakter olmalıdır." }),
-  animalGroupId: z.string({ required_error: "Lütfen bir hayvan grubu seçin." }),
-  items: z.array(
-    z.object({
-      feedStockId: z.string({ required_error: "Lütfen bir yem seçin." }),
-      amount: z.coerce.number().gt(0, { message: "Miktar 0'dan büyük olmalıdır." }),
-    })
-  ).min(1, { message: "Rasyona en az bir yem eklemelisiniz." }),
+  animalGroupId: z.string().min(1, { message: "Hayvan grubu seçilmelidir." }),
+  items: z.array(z.object({
+    feedStockId: z.string().min(1, { message: "Yem seçilmelidir." }),
+    amount: z.coerce.number().positive({ message: "Miktar pozitif olmalıdır." }),
+  })).min(1, { message: "En az bir yem öğesi eklenmelidir." }),
 });
 
 type RationFormValues = z.infer<typeof rationFormSchema>;
+
+interface AnimalGroup {
+  id: number;
+  name: string;
+  animalCount: number;
+}
 
 interface CreateRationDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSubmit: (data: RationFormValues) => void;
   animalGroups: AnimalGroup[];
-  feedStock: FeedItem[];
+  feedStock: FeedStockItem[];
   defaultGroupId?: string;
-  initialData?: Ration | null;
+  initialData?: any;
   onUpdateAnimalCount: (groupId: number, count: number) => void;
 }
 
-export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroups, feedStock, defaultGroupId, initialData, onUpdateAnimalCount }: CreateRationDialogProps) {
-  const isEditMode = !!initialData;
-
+export function CreateRationDialog({
+  isOpen,
+  onOpenChange,
+  onSubmit,
+  animalGroups,
+  feedStock,
+  defaultGroupId,
+  initialData,
+  onUpdateAnimalCount,
+}: CreateRationDialogProps) {
   const form = useForm<RationFormValues>({
     resolver: zodResolver(rationFormSchema),
     defaultValues: {
       name: "",
-      items: [{ feedStockId: "", amount: 1 }],
+      animalGroupId: defaultGroupId || "",
+      items: [{ feedStockId: "", amount: 0 }],
     },
   });
 
@@ -67,30 +78,14 @@ export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroup
     control: form.control,
     name: "items",
   });
-  
-  const selectedAnimalGroupId = form.watch("animalGroupId");
-  const selectedAnimalGroup = React.useMemo(() => {
-      if (!selectedAnimalGroupId) return null;
-      return animalGroups.find(g => g.id.toString() === selectedAnimalGroupId);
-  }, [selectedAnimalGroupId, animalGroups]);
-
-  const [currentAnimalCount, setCurrentAnimalCount] = React.useState<string>("");
-
-  React.useEffect(() => {
-      if (selectedAnimalGroup) {
-          setCurrentAnimalCount(selectedAnimalGroup.animalCount.toString());
-      } else {
-          setCurrentAnimalCount("");
-      }
-  }, [selectedAnimalGroup]);
 
   React.useEffect(() => {
     if (isOpen) {
-      if (isEditMode && initialData) {
+      if (initialData) {
         form.reset({
           name: initialData.name,
           animalGroupId: initialData.animalGroupId.toString(),
-          items: initialData.items.map(item => ({
+          items: initialData.items.map((item: any) => ({
             feedStockId: item.feedStockId.toString(),
             amount: item.amount,
           })),
@@ -98,169 +93,186 @@ export function CreateRationDialog({ isOpen, onOpenChange, onSubmit, animalGroup
       } else {
         form.reset({
           name: "",
-          animalGroupId: defaultGroupId || undefined,
-          items: [{ feedStockId: "", amount: 1 }],
+          animalGroupId: defaultGroupId || "",
+          items: [{ feedStockId: "", amount: 0 }],
         });
       }
     }
-  }, [isOpen, isEditMode, initialData, defaultGroupId, form]);
+  }, [isOpen, initialData, defaultGroupId, form]);
 
   const handleFormSubmit = (data: RationFormValues) => {
     onSubmit(data);
-    onOpenChange(false);
+    form.reset();
   };
 
-  const handleAnimalCountUpdate = () => {
-    if (selectedAnimalGroup && currentAnimalCount !== "") {
-        const newCount = parseInt(currentAnimalCount, 10);
-        if (!isNaN(newCount) && newCount > 0) {
-            onUpdateAnimalCount(selectedAnimalGroup.id, newCount);
-        }
+  const selectedGroupId = form.watch("animalGroupId");
+  const selectedGroup = animalGroups.find(g => g.id.toString() === selectedGroupId);
+
+  const handleAnimalCountChange = (count: number) => {
+    if (selectedGroup) {
+      onUpdateAnimalCount(selectedGroup.id, count);
+    }
+  };
+
+  const addFeedItem = () => {
+    append({ feedStockId: "", amount: 0 });
+  };
+
+  const removeFeedItem = (index: number) => {
+    if (fields.length > 1) {
+      remove(index);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Rasyonu Düzenle" : "Yeni Rasyon Oluştur"}</DialogTitle>
+          <DialogTitle>
+            {initialData ? "Rasyon Düzenle" : "Yeni Rasyon Oluştur"}
+          </DialogTitle>
           <DialogDescription>
-            {isEditMode
-              ? "Rasyon bilgilerini düzenlemek için aşağıdaki alanları güncelleyin."
-              : "Yeni bir yem rasyonu oluşturmak için aşağıdaki alanları doldurun."}
+            Hayvan grubu için günlük yem rasyonu oluşturun.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rasyon Adı</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Örn: Yüksek Verim Rasyonu" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="animalGroupId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hayvan Grubu</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Bir hayvan grubu seçin" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {animalGroups.map((group) => (
-                          <SelectItem key={group.id} value={group.id.toString()}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {selectedAnimalGroup && (
-                  <div className="flex items-end gap-4">
-                      <FormItem>
-                          <FormLabel>Hayvan Sayısı</FormLabel>
-                          <FormControl>
-                              <Input
-                                  type="number"
-                                  value={currentAnimalCount}
-                                  onChange={(e) => setCurrentAnimalCount(e.target.value)}
-                                  className="w-[180px]"
-                              />
-                          </FormControl>
-                      </FormItem>
-                      <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleAnimalCountUpdate}
-                          disabled={!currentAnimalCount || currentAnimalCount === selectedAnimalGroup.animalCount.toString()}
-                      >
-                          Güncelle
-                      </Button>
-                  </div>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 py-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Rasyon Adı</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Örn: Süt İneği Günlük Rasyonu" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-            <Separator />
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Rasyon İçeriği</h3>
-              {fields.map((field, index) => {
-                const feedStockId = form.watch(`items.${index}.feedStockId`);
-                const selectedFeedItem = feedStock.find(item => item.id.toString() === feedStockId);
-                const unit = selectedFeedItem?.unit || 'kg';
+            />
 
-                return (
-                  <div key={field.id} className="flex items-end gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.feedStockId`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel>Yem</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Bir yem seçin" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {feedStock.map((item) => (
-                                <SelectItem key={item.id} value={item.id.toString()}>
-                                  {item.name} ({item.stockAmount} {item.unit} stokta)
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+            <FormField
+              control={form.control}
+              name="animalGroupId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Hayvan Grubu</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Hayvan grubunu seçin" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {animalGroups.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name} ({group.animalCount} hayvan)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {selectedGroup && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Hayvan Sayısı Güncelle</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="number"
+                      value={selectedGroup.animalCount}
+                      onChange={(e) => handleAnimalCountChange(parseInt(e.target.value) || 0)}
+                      className="w-24"
                     />
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.amount`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Miktar ({unit})</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="Miktar" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Badge variant="secondary">
+                      Mevcut: {selectedGroup.animalCount} hayvan
+                    </Badge>
                   </div>
-                )
-              })}
-               <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => append({ feedStockId: "", amount: 1 })}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <FormLabel>Yem Öğeleri</FormLabel>
+                <Button type="button" variant="outline" size="sm" onClick={addFeedItem}>
+                  <Plus className="h-4 w-4 mr-2" />
                   Yem Ekle
                 </Button>
+              </div>
+
+              {fields.map((field, index) => (
+                <Card key={field.id}>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.feedStockId`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Yem</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Yem seçin" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {feedStock.map((feed) => (
+                                  <SelectItem key={feed.id} value={feed.id.toString()}>
+                                    {feed.name} (Stok: {feed.stock_amount} {feed.unit})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.amount`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Miktar (kg/gün)</FormLabel>
+                            <FormControl>
+                              <Input type="number" placeholder="0" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeFeedItem(index)}
+                          disabled={fields.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+
             <DialogFooter>
-              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>İptal</Button>
-              <Button type="submit">{isEditMode ? "Değişiklikleri Kaydet" : "Rasyonu Kaydet"}</Button>
+              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+                İptal
+              </Button>
+              <Button type="submit">
+                {initialData ? "Güncelle" : "Oluştur"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
