@@ -1,81 +1,68 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Download, Archive, ArchiveRestore, Trash2 } from "lucide-react";
-import { feedStock as initialFeedStock, FeedItem } from "@/data/feedStock";
-import { animalGroups as initialAnimalGroups, rations as initialRations, Ration } from "@/data/rations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateRationDialog } from "@/components/CreateRationDialog";
 import { FeedItemDialog } from "@/components/FeedItemDialog";
 import { AddStockEntryDialog } from "@/components/AddStockEntryDialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useFeedStock } from "@/hooks/useFeedStock";
+import { useToast } from "@/hooks/use-toast";
+
+// Temporary local state for features not yet in database
+const initialAnimalGroups = [
+  { id: 1, name: "Süt İnekleri", animalCount: 25 },
+  { id: 2, name: "Buzağılar", animalCount: 8 },
+  { id: 3, name: "Koyun Sürüsü", animalCount: 50 }
+];
+
+const initialRations = [
+  {
+    id: 1,
+    name: "Süt İneği Günlük Rasyonu",
+    animalGroupId: 1,
+    items: [
+      { feedStockId: 1, amount: 25 },
+      { feedStockId: 2, amount: 8 }
+    ],
+    isArchived: false
+  }
+];
 
 const FeedStock = () => {
+  const { toast } = useToast();
+  const { 
+    feedStock, 
+    isLoading, 
+    addFeedItem, 
+    isAdding, 
+    updateFeedItem, 
+    isUpdating 
+  } = useFeedStock();
+
+  // Local state for ration management (will be moved to Supabase later)
   const [animalGroups, setAnimalGroups] = useState(initialAnimalGroups);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(animalGroups[0]?.id.toString());
-  const [rations, setRations] = useState<Ration[]>(initialRations);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [feedStockItems, setFeedStockItems] = useState<FeedItem[]>(initialFeedStock);
-  const [isFeedItemDialogOpen, setIsFeedItemDialogOpen] = useState(false);
-  const [isAddStockDialogOpen, setIsAddStockDialogOpen] = useState(false);
-  const [editingFeedItem, setEditingFeedItem] = useState<FeedItem | null>(null);
-  const [editingRation, setEditingRation] = useState<Ration | null>(null);
+  const [rations, setRations] = useState(initialRations);
   const [autoModeRations, setAutoModeRations] = useState<number[]>([]);
 
-  const selectedGroup = animalGroups.find(g => g.id.toString() === selectedGroupId);
+  // Dialog states
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isFeedItemDialogOpen, setIsFeedItemDialogOpen] = useState(false);
+  const [isAddStockDialogOpen, setIsAddStockDialogOpen] = useState(false);
+  const [editingFeedItem, setEditingFeedItem] = useState(null);
+  const [editingRation, setEditingRation] = useState(null);
 
+  const selectedGroup = animalGroups.find(g => g.id.toString() === selectedGroupId);
   const filteredRations = selectedGroupId
     ? rations.filter((r) => r.animalGroupId === parseInt(selectedGroupId, 10))
     : [];
-
-  useEffect(() => {
-    const autoModeRationIds: number[] = JSON.parse(localStorage.getItem('autoModeRations') || '[]');
-    setAutoModeRations(autoModeRationIds);
-
-    const todayStr = new Date().toLocaleDateString('tr-TR');
-    const lastDeductions: { [key: number]: string } = JSON.parse(localStorage.getItem('lastDeductions') || '{}');
-    
-    setFeedStockItems(currentFeedStock => {
-        let stockChanged = false;
-        let newFeedStock = JSON.parse(JSON.stringify(currentFeedStock)); // Deep copy
-        const newLastDeductions = {...lastDeductions};
-
-        const rationsForDeduction = rations.filter(r => 
-          autoModeRationIds.includes(r.id) && lastDeductions[r.id] !== todayStr
-        );
-
-        if (rationsForDeduction.length === 0) {
-            return currentFeedStock;
-        }
-
-        rationsForDeduction.forEach(ration => {
-            const group = animalGroups.find(g => g.id === ration.animalGroupId);
-            if (group) {
-              ration.items.forEach(item => {
-                const totalDeduction = item.amount * group.animalCount;
-                const stockItemIndex = newFeedStock.findIndex((fs: FeedItem) => fs.id === item.feedStockId);
-                if (stockItemIndex > -1) {
-                  newFeedStock[stockItemIndex].stockAmount -= totalDeduction;
-                  stockChanged = true;
-                }
-              });
-              newLastDeductions[ration.id] = todayStr;
-            }
-        });
-
-        if (stockChanged) {
-            localStorage.setItem('lastDeductions', JSON.stringify(newLastDeductions));
-            console.log('Otomatik düşüm işlemi sayfa yüklendiğinde gerçekleştirildi.');
-            return newFeedStock;
-        }
-
-        return currentFeedStock;
-    });
-  }, []); // Sadece bileşen yüklendiğinde çalışır
 
   const handleAutoModeToggle = (checked: boolean, rationId: number) => {
     setAutoModeRations(prev => {
@@ -98,17 +85,21 @@ const FeedStock = () => {
     };
 
     if (editingRation) {
-      const updatedRation: Ration = { ...editingRation, ...rationData };
+      const updatedRation = { ...editingRation, ...rationData };
       setRations(prevRations =>
         prevRations.map(r => (r.id === editingRation.id ? updatedRation : r))
       );
+      toast({ title: "Başarılı", description: "Rasyon güncellendi." });
     } else {
-      const newRation: Ration = {
+      const newRation = {
         id: Date.now(),
         ...rationData,
+        isArchived: false
       };
       setRations(prevRations => [...prevRations, newRation]);
+      toast({ title: "Başarılı", description: "Yeni rasyon oluşturuldu." });
     }
+    setIsCreateDialogOpen(false);
   };
 
   const handleOpenCreateRationDialog = () => {
@@ -116,7 +107,7 @@ const FeedStock = () => {
     setIsCreateDialogOpen(true);
   };
 
-  const handleOpenEditRationDialog = (ration: Ration) => {
+  const handleOpenEditRationDialog = (ration: any) => {
     setEditingRation(ration);
     setIsCreateDialogOpen(true);
   };
@@ -136,61 +127,52 @@ const FeedStock = () => {
     );
   };
 
-  const handleOpenFeedItemDialog = (item: FeedItem | null) => {
+  const handleOpenFeedItemDialog = (item: any = null) => {
     setEditingFeedItem(item);
     setIsFeedItemDialogOpen(true);
   };
 
-  const handleOpenAddStockDialog = (item: FeedItem) => {
+  const handleOpenAddStockDialog = (item: any) => {
     setEditingFeedItem(item);
     setIsAddStockDialogOpen(true);
   };
 
-  const handleSaveFeedItem = (data: Omit<FeedItem, 'id' | 'lastUpdated'>) => {
-    const today = new Date().toLocaleDateString('tr-TR');
+  const handleSaveFeedItem = (data: any) => {
     if (editingFeedItem) {
-      setFeedStockItems(currentItems =>
-        currentItems.map(item =>
-          item.id === editingFeedItem.id
-            ? { ...item, ...data, lastUpdated: today }
-            : item
-        )
-      );
-    } else {
-      const newItem: FeedItem = {
-        id: Date.now(),
+      // Update existing item
+      updateFeedItem({
+        id: editingFeedItem.id,
         ...data,
-        lastUpdated: today
-      };
-      setFeedStockItems(currentItems => [...currentItems, newItem]);
+        last_updated: new Date().toISOString().split('T')[0]
+      });
+    } else {
+      // Add new item
+      addFeedItem({
+        ...data,
+        last_updated: new Date().toISOString().split('T')[0]
+      });
     }
     setIsFeedItemDialogOpen(false);
+    setEditingFeedItem(null);
   };
 
   const handleSaveStockEntry = (data: { amountToAdd: number; supplier: string; document?: File }) => {
     if (!editingFeedItem) return;
 
-    const today = new Date().toLocaleDateString('tr-TR');
-    
     if (data.document) {
       console.log(`Uploading document for ${editingFeedItem.name}: ${data.document.name}`);
-      // Gerçek bir uygulamada, dosya burada bir depolama hizmetine yüklenir.
     }
 
-    setFeedStockItems(currentItems =>
-      currentItems.map(item =>
-        item.id === editingFeedItem.id
-          ? {
-              ...item,
-              stockAmount: item.stockAmount + data.amountToAdd,
-              supplier: data.supplier,
-              lastUpdated: today,
-            }
-          : item
-      )
-    );
+    // Update the stock amount
+    updateFeedItem({
+      id: editingFeedItem.id,
+      stock_amount: editingFeedItem.stock_amount + data.amountToAdd,
+      supplier: data.supplier,
+      last_updated: new Date().toISOString().split('T')[0]
+    });
 
     setIsAddStockDialogOpen(false);
+    setEditingFeedItem(null);
   };
 
   const handleExportData = () => {
@@ -205,15 +187,15 @@ const FeedStock = () => {
     ];
     const csvRows = [headers.join(',')];
 
-    feedStockItems.forEach(item => {
+    feedStock.forEach(item => {
       const row = [
         item.id,
         `"${item.name.replace(/"/g, '""')}"`,
         item.type,
-        item.stockAmount,
+        item.stock_amount,
         item.unit,
-        `"${item.supplier.replace(/"/g, '""')}"`,
-        item.lastUpdated
+        `"${(item.supplier || '').replace(/"/g, '""')}"`,
+        item.last_updated
       ];
       csvRows.push(row.join(','));
     });
@@ -231,6 +213,7 @@ const FeedStock = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }
+    toast({ title: "Başarılı", description: "Yem stok verileri dışa aktarıldı." });
   };
 
   const handleArchiveRation = (rationId: number) => {
@@ -239,22 +222,29 @@ const FeedStock = () => {
         r.id === rationId ? { ...r, isArchived: true } : r
       )
     );
+    toast({ title: "Başarılı", description: "Rasyon arşivlendi." });
   };
 
   const handleRestoreRation = (rationId: number) => {
     setRations(prevRations =>
       prevRations.map(r => (r.id === rationId ? { ...r, isArchived: false } : r))
     );
+    toast({ title: "Başarılı", description: "Rasyon geri yüklendi." });
   };
 
   const handleDeleteRation = (rationId: number) => {
     setRations(prevRations => prevRations.filter(r => r.id !== rationId));
+    toast({ title: "Başarılı", description: "Rasyon kalıcı olarak silindi." });
   };
 
   const handleExportArchivedRations = () => {
     const dataToExport = rations.filter(r => r.isArchived);
     if (dataToExport.length === 0) {
-      alert("Dışa aktarılacak arşivlenmiş rasyon bulunmuyor.");
+      toast({ 
+        variant: "destructive", 
+        title: "Uyarı", 
+        description: "Dışa aktarılacak arşivlenmiş rasyon bulunmuyor." 
+      });
       return;
     }
 
@@ -264,7 +254,7 @@ const FeedStock = () => {
     dataToExport.forEach(ration => {
       const group = animalGroups.find(g => g.id === ration.animalGroupId);
       const itemsStr = ration.items.map(item => {
-        const feed = feedStockItems.find(f => f.id === item.feedStockId);
+        const feed = feedStock.find(f => f.id === item.feedStockId);
         return `${feed ? feed.name : 'Bilinmeyen'}: ${item.amount}${feed ? ` ${feed.unit}` : ' kg'}`;
       }).join(' | ');
 
@@ -290,10 +280,19 @@ const FeedStock = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }
+    toast({ title: "Başarılı", description: "Arşivlenmiş rasyonlar dışa aktarıldı." });
   };
 
   const activeRations = rations.filter(r => !r.isArchived).sort((a, b) => b.id - a.id);
   const archivedRations = rations.filter(r => r.isArchived).sort((a, b) => b.id - a.id);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Yem stok verileri yükleniyor...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -306,6 +305,7 @@ const FeedStock = () => {
           <TabsTrigger value="stock-list">Stok Listesi</TabsTrigger>
           <TabsTrigger value="ration-planning">Rasyon Yönetimi</TabsTrigger>
         </TabsList>
+        
         <TabsContent value="stock-list">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -314,9 +314,12 @@ const FeedStock = () => {
                 <CardDescription>Mevcut yem stoğunuzu yönetin ve takip edin.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <Button onClick={() => handleOpenFeedItemDialog(null)}>
+                <Button 
+                  onClick={() => handleOpenFeedItemDialog(null)}
+                  disabled={isAdding}
+                >
                   <Plus className="mr-2 h-4 w-4" />
-                  Yeni Yem Ekle
+                  {isAdding ? "Ekleniyor..." : "Yeni Yem Ekle"}
                 </Button>
                 <Button variant="outline" onClick={handleExportData}>
                   <Download className="mr-2 h-4 w-4" />
@@ -325,42 +328,70 @@ const FeedStock = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Yem Adı</TableHead>
-                    <TableHead>Türü</TableHead>
-                    <TableHead>Stok Miktarı</TableHead>
-                    <TableHead>Tedarikçi</TableHead>
-                    <TableHead>Son Güncelleme</TableHead>
-                    <TableHead className="text-right">İşlemler</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {feedStockItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.type}</TableCell>
-                      <TableCell>{`${item.stockAmount} ${item.unit}`}</TableCell>
-                      <TableCell>{item.supplier}</TableCell>
-                      <TableCell>{item.lastUpdated}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleOpenFeedItemDialog(item)}>
-                            Düzenle
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleOpenAddStockDialog(item)}>
-                            Giriş Yap
-                          </Button>
-                        </div>
-                      </TableCell>
+              {feedStock.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-2 text-center border-2 border-dashed rounded-lg">
+                  <h3 className="text-lg font-semibold">Henüz Yem Eklenmemiş</h3>
+                  <p className="text-sm text-muted-foreground">
+                    İlk yem öğenizi ekleyerek başlayın.
+                  </p>
+                  <Button 
+                    variant="secondary" 
+                    className="mt-4" 
+                    onClick={() => handleOpenFeedItemDialog(null)}
+                    disabled={isAdding}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    İlk Yemi Ekle
+                  </Button>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Yem Adı</TableHead>
+                      <TableHead>Türü</TableHead>
+                      <TableHead>Stok Miktarı</TableHead>
+                      <TableHead>Tedarikçi</TableHead>
+                      <TableHead>Son Güncelleme</TableHead>
+                      <TableHead className="text-right">İşlemler</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {feedStock.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.type}</TableCell>
+                        <TableCell>{`${item.stock_amount} ${item.unit}`}</TableCell>
+                        <TableCell>{item.supplier || "-"}</TableCell>
+                        <TableCell>{new Date(item.last_updated).toLocaleDateString('tr-TR')}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleOpenFeedItemDialog(item)}
+                              disabled={isUpdating}
+                            >
+                              Düzenle
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleOpenAddStockDialog(item)}
+                            >
+                              Giriş Yap
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
+        
         <TabsContent value="ration-planning" className="space-y-4">
           <div className="flex justify-end">
             <Button onClick={handleOpenCreateRationDialog}>
@@ -368,11 +399,13 @@ const FeedStock = () => {
               Rasyon Oluştur
             </Button>
           </div>
+          
           <Tabs defaultValue="active" className="w-full">
             <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
               <TabsTrigger value="active">Aktif Rasyonlar</TabsTrigger>
               <TabsTrigger value="archive">Arşiv</TabsTrigger>
             </TabsList>
+            
             <TabsContent value="active" className="pt-6">
               <div className="space-y-6">
                 {activeRations.length > 0 ? (
@@ -382,8 +415,11 @@ const FeedStock = () => {
                       <Card key={ration.id} className="w-full">
                         <CardHeader>
                           <div className="flex items-start justify-between gap-4">
-                            <CardTitle className="cursor-pointer hover:underline" onClick={() => handleOpenEditRationDialog(ration)}>
-                                {ration.name}
+                            <CardTitle 
+                              className="cursor-pointer hover:underline" 
+                              onClick={() => handleOpenEditRationDialog(ration)}
+                            >
+                              {ration.name}
                             </CardTitle>
                             <div className="flex flex-col items-end gap-4">
                               <div className="flex items-center gap-6">
@@ -398,11 +434,17 @@ const FeedStock = () => {
                                 {rationGroup && (
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm font-medium text-muted-foreground">Hayvan Sayısı:</span>
-                                    <Badge variant="secondary" className="text-base font-bold">{rationGroup.animalCount}</Badge>
+                                    <Badge variant="secondary" className="text-base font-bold">
+                                      {rationGroup.animalCount}
+                                    </Badge>
                                   </div>
                                 )}
                               </div>
-                               <Button variant="outline" size="sm" onClick={() => handleArchiveRation(ration.id)}>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleArchiveRation(ration.id)}
+                              >
                                 <Archive className="mr-2 h-4 w-4" />
                                 Arşivle
                               </Button>
@@ -419,10 +461,12 @@ const FeedStock = () => {
                             </TableHeader>
                             <TableBody>
                               {ration.items.map((item, index) => {
-                                const feedInfo = feedStockItems.find(f => f.id === item.feedStockId);
+                                const feedInfo = feedStock.find(f => f.id === item.feedStockId);
                                 return (
                                   <TableRow key={index}>
-                                    <TableCell className="font-medium">{feedInfo ? feedInfo.name : 'Bilinmeyen Yem'}</TableCell>
+                                    <TableCell className="font-medium">
+                                      {feedInfo ? feedInfo.name : 'Bilinmeyen Yem'}
+                                    </TableCell>
                                     <TableCell className="text-right">{item.amount}</TableCell>
                                   </TableRow>
                                 );
@@ -439,7 +483,11 @@ const FeedStock = () => {
                     <p className="text-sm text-muted-foreground">
                       Henüz bir rasyon oluşturulmamış veya tüm rasyonlar arşivlenmiş.
                     </p>
-                    <Button variant="secondary" className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
+                    <Button 
+                      variant="secondary" 
+                      className="mt-4" 
+                      onClick={handleOpenCreateRationDialog}
+                    >
                       <Plus className="mr-2 h-4 w-4" />
                       İlk Rasyonu Oluştur
                     </Button>
@@ -447,80 +495,98 @@ const FeedStock = () => {
                 )}
               </div>
             </TabsContent>
+            
             <TabsContent value="archive" className="pt-6">
-               <Card>
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Arşivlenmiş Rasyonlar</CardTitle>
-                        <CardDescription>Arşivlenmiş rasyonları yönetin veya dışa aktarın.</CardDescription>
-                    </div>
-                    <Button variant="outline" onClick={handleExportArchivedRations} disabled={archivedRations.length === 0}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Dışa Aktar
-                    </Button>
+                  <div>
+                    <CardTitle>Arşivlenmiş Rasyonlar</CardTitle>
+                    <CardDescription>Arşivlenmiş rasyonları yönetin veya dışa aktarın.</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleExportArchivedRations} 
+                    disabled={archivedRations.length === 0}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Dışa Aktar
+                  </Button>
                 </CardHeader>
                 <CardContent>
-                    {archivedRations.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Rasyon Adı</TableHead>
-                                    <TableHead>Hayvan Grubu</TableHead>
-                                    <TableHead className="text-right">İşlemler</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {archivedRations.map((ration) => {
-                                    const group = animalGroups.find(g => g.id === ration.animalGroupId);
-                                    return(
-                                    <TableRow key={ration.id}>
-                                        <TableCell className="font-medium">{ration.name}</TableCell>
-                                        <TableCell>{group ? group.name : "Bilinmeyen"}</TableCell>
-                                        <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => handleRestoreRation(ration.id)}>
-                                                <ArchiveRestore /> Geri Yükle
-                                            </Button>
-                                            <Button variant="destructive" size="sm" onClick={() => handleDeleteRation(ration.id)}>
-                                                <Trash2 /> Kalıcı Olarak Sil
-                                            </Button>
-                                        </div>
-                                        </TableCell>
-                                    </TableRow>
-                                    )
-                                })}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                         <div className="flex flex-col items-center justify-center h-48 gap-2 text-center">
-                            <h3 className="text-lg font-semibold">Arşiv Boş</h3>
-                            <p className="text-sm text-muted-foreground">
-                                Henüz arşivlenmiş bir rasyon bulunmuyor.
-                            </p>
-                        </div>
-                    )}
+                  {archivedRations.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Rasyon Adı</TableHead>
+                          <TableHead>Hayvan Grubu</TableHead>
+                          <TableHead className="text-right">İşlemler</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {archivedRations.map((ration) => {
+                          const group = animalGroups.find(g => g.id === ration.animalGroupId);
+                          return (
+                            <TableRow key={ration.id}>
+                              <TableCell className="font-medium">{ration.name}</TableCell>
+                              <TableCell>{group ? group.name : "Bilinmeyen"}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => handleRestoreRation(ration.id)}
+                                  >
+                                    <ArchiveRestore className="mr-2 h-4 w-4" />
+                                    Geri Yükle
+                                  </Button>
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm" 
+                                    onClick={() => handleDeleteRation(ration.id)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Kalıcı Olarak Sil
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-48 gap-2 text-center">
+                      <h3 className="text-lg font-semibold">Arşiv Boş</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Henüz arşivlenmiş bir rasyon bulunmuyor.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
-               </Card>
+              </Card>
             </TabsContent>
           </Tabs>
         </TabsContent>
       </Tabs>
+
       <CreateRationDialog
         isOpen={isCreateDialogOpen}
         onOpenChange={handleRationDialogOpenChange}
         onSubmit={handleSaveRation}
         animalGroups={animalGroups}
-        feedStock={feedStockItems}
+        feedStock={feedStock}
         defaultGroupId={selectedGroupId}
         initialData={editingRation}
         onUpdateAnimalCount={handleUpdateAnimalCount}
       />
+      
       <FeedItemDialog
         isOpen={isFeedItemDialogOpen}
         onOpenChange={setIsFeedItemDialogOpen}
         onSubmit={handleSaveFeedItem}
         initialData={editingFeedItem}
       />
+      
       <AddStockEntryDialog
         isOpen={isAddStockDialogOpen}
         onOpenChange={setIsAddStockDialogOpen}

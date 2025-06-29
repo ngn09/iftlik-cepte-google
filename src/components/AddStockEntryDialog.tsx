@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { FeedItem } from "@/data/feedStock";
+import { FeedStockItem } from "@/hooks/useFeedStock";
 
 const addStockEntryFormSchema = z.object({
   amountToAdd: z.coerce.number().positive({ message: "Eklenecek miktar pozitif olmalıdır." }),
@@ -35,7 +35,7 @@ interface AddStockEntryDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSubmit: (data: AddStockEntryFormValues) => void;
-  feedItem: FeedItem | null;
+  feedItem: FeedStockItem | null;
 }
 
 export function AddStockEntryDialog({ isOpen, onOpenChange, onSubmit, feedItem }: AddStockEntryDialogProps) {
@@ -50,16 +50,17 @@ export function AddStockEntryDialog({ isOpen, onOpenChange, onSubmit, feedItem }
 
   React.useEffect(() => {
     if (isOpen && feedItem) {
-        form.reset({
-            amountToAdd: 0,
-            supplier: feedItem.supplier,
-            document: undefined
-        });
+      form.reset({
+        amountToAdd: 0,
+        supplier: feedItem.supplier || "",
+        document: undefined
+      });
     }
   }, [feedItem, isOpen, form]);
 
   const handleFormSubmit = (data: AddStockEntryFormValues) => {
     onSubmit(data);
+    form.reset();
   };
 
   if (!feedItem) return null;
@@ -70,7 +71,7 @@ export function AddStockEntryDialog({ isOpen, onOpenChange, onSubmit, feedItem }
         <DialogHeader>
           <DialogTitle>{feedItem.name} - Yeni Stok Girişi</DialogTitle>
           <DialogDescription>
-            Bu yem için yeni stok giriş bilgilerini girin. Mevcut stok: {feedItem.stockAmount} {feedItem.unit}
+            Bu yem için yeni stok giriş bilgilerini girin. Mevcut stok: {feedItem.stock_amount} {feedItem.unit}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -118,7 +119,9 @@ export function AddStockEntryDialog({ isOpen, onOpenChange, onSubmit, feedItem }
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>İptal</Button>
+              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+                İptal
+              </Button>
               <Button type="submit">Girişi Kaydet</Button>
             </DialogFooter>
           </form>
