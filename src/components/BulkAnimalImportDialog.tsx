@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAnimals } from "@/hooks/useAnimals";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Upload, AlertTriangle } from "lucide-react";
+import { FileText, Upload, AlertTriangle, Info } from "lucide-react";
 import * as XLSX from 'xlsx';
 
 interface BulkAnimalImportDialogProps {
@@ -31,6 +31,11 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewData, setPreviewData] = useState<AnimalImportData[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
+  const [documentInfo, setDocumentInfo] = useState<{
+    institution?: string;
+    farmInfo?: string;
+    date?: string;
+  }>({});
 
   const validateAnimalData = (data: any[]): { valid: AnimalImportData[], errors: string[] } => {
     const valid: AnimalImportData[] = [];
@@ -43,44 +48,55 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
       const rowNumber = index + 1;
       
       // Zorunlu alanları kontrol et
-      if (!row.id || !row.species || !row.breed || !row.gender || !row.date_of_birth) {
-        errors.push(`Satır ${rowNumber}: Zorunlu alanlar eksik (Küpe No, Tür, Cins, Cinsiyet, Doğum Tarihi)`);
+      if (!row.id || !row.breed || !row.gender || !row.date_of_birth) {
+        errors.push(`Satır ${rowNumber}: Zorunlu alanlar eksik (Küpe No, Irk, Cinsiyet, Doğum Tarihi)`);
         return;
       }
 
-      // Tür kontrolü
-      if (!validSpecies.includes(row.species)) {
-        errors.push(`Satır ${rowNumber}: Geçersiz tür (${validSpecies.join(', ')} olmalı)`);
-        return;
+      // Irk bilgisinden tür çıkarımı yap
+      let species: 'İnek' | 'Koyun' | 'Keçi' | 'Tavuk' | 'Diğer' = 'İnek';
+      const breedLower = row.breed.toLowerCase();
+      if (breedLower.includes('holstein') || breedLower.includes('simmental') || breedLower.includes('jersey')) {
+        species = 'İnek';
+      } else if (breedLower.includes('merinos') || breedLower.includes('akkaraman')) {
+        species = 'Koyun';
+      } else if (breedLower.includes('kıl keçi') || breedLower.includes('angora')) {
+        species = 'Keçi';
+      } else if (breedLower.includes('tavuk') || breedLower.includes('piliç')) {
+        species = 'Tavuk';
       }
 
-      // Cinsiyet kontrolü
-      if (!validGenders.includes(row.gender)) {
-        errors.push(`Satır ${rowNumber}: Geçersiz cinsiyet (${validGenders.join(', ')} olmalı)`);
-        return;
+      // Cinsiyet kontrolü ve düzeltme
+      let gender: 'Erkek' | 'Dişi' = 'Dişi';
+      if (row.gender?.toUpperCase() === 'ERKEK' || row.gender?.toUpperCase() === 'E') {
+        gender = 'Erkek';
+      } else if (row.gender?.toUpperCase() === 'DİŞİ' || row.gender?.toUpperCase() === 'DIŞI' || row.gender?.toUpperCase() === 'D') {
+        gender = 'Dişi';
       }
 
-      // Durum kontrolü (opsiyonel, varsayılan Aktif)
-      const status = row.status || 'Aktif';
-      if (!validStatuses.includes(status)) {
-        errors.push(`Satır ${rowNumber}: Geçersiz durum (${validStatuses.join(', ')} olmalı)`);
-        return;
+      // Tarih formatı düzeltme (DD.MM.YYYY -> YYYY-MM-DD)
+      let formattedDate = row.date_of_birth;
+      if (formattedDate && formattedDate.includes('.')) {
+        const parts = formattedDate.split('.');
+        if (parts.length === 3) {
+          formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
       }
 
       // Tarih formatı kontrolü
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dateRegex.test(row.date_of_birth)) {
-        errors.push(`Satır ${rowNumber}: Geçersiz tarih formatı (YYYY-MM-DD olmalı)`);
+      if (!dateRegex.test(formattedDate)) {
+        errors.push(`Satır ${rowNumber}: Geçersiz tarih formatı (${formattedDate})`);
         return;
       }
 
       valid.push({
         id: row.id.toString(),
-        species: row.species,
+        species: species,
         breed: row.breed.toString(),
-        gender: row.gender,
-        status: status,
-        date_of_birth: row.date_of_birth
+        gender: gender,
+        status: 'Aktif',
+        date_of_birth: formattedDate
       });
     });
 
@@ -98,11 +114,10 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
       // Türkçe başlıkları İngilizce eşleştir
       const mappedData = jsonData.map((row: any) => ({
         id: row['Küpe No'] || row['ID'] || row['id'],
-        species: row['Tür'] || row['Species'] || row['species'],
-        breed: row['Cins'] || row['Breed'] || row['breed'],
+        breed: row['Irk'] || row['Breed'] || row['breed'] || row['Cins'],
         gender: row['Cinsiyet'] || row['Gender'] || row['gender'],
-        status: row['Durum'] || row['Status'] || row['status'] || 'Aktif',
-        date_of_birth: row['Doğum Tarihi'] || row['Birth Date'] || row['date_of_birth']
+        date_of_birth: row['Doğum Tarihi'] || row['Birth Date'] || row['date_of_birth'],
+        arrival_date: row['İşletmeye Geliş Tarihi'] || row['Arrival Date']
       }));
 
       return mappedData;
@@ -113,29 +128,94 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
 
   const processPDFFile = async (file: File) => {
     try {
-      // PDF işleme için basit metin çıkarma
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
+      const arrayBuffer = await file.arrayBuffer();
+      const text = new TextDecoder('utf-8').decode(arrayBuffer);
       
-      // Basit CSV benzeri format varsayımı
+      // Belge bilgilerini çıkar
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+      
+      // Kurum bilgisi arama
+      const institutionLine = lines.find(line => 
+        line.includes('Tarım') || line.includes('Bakanlık') || line.includes('Müdürlük')
+      );
+      
+      // İşletme bilgisi arama
+      const farmLine = lines.find(line => 
+        line.includes('İşletme') && (line.includes('Adı') || line.includes('Bilgi'))
+      );
+
+      setDocumentInfo({
+        institution: institutionLine,
+        farmInfo: farmLine,
+        date: new Date().toLocaleDateString('tr-TR')
+      });
+
+      // "İŞLETMEDEKİ MEVCUT HAYVANLAR" bölümünü bul
+      const startIndex = lines.findIndex(line => 
+        line.includes('İŞLETMEDEKİ MEVCUT HAYVANLAR') || 
+        line.includes('MEVCUT HAYVANLAR')
+      );
+
+      if (startIndex === -1) {
+        throw new Error('Hayvan listesi bölümü bulunamadı');
+      }
+
+      // Tablo başlığını bul
+      let headerIndex = -1;
+      for (let i = startIndex + 1; i < lines.length; i++) {
+        if (lines[i].includes('Küpe No') || lines[i].includes('Sıra')) {
+          headerIndex = i;
+          break;
+        }
+      }
+
+      if (headerIndex === -1) {
+        throw new Error('Tablo başlığı bulunamadı');
+      }
+
       const data = [];
-      for (let i = 1; i < lines.length; i++) { // İlk satır başlık
-        const values = lines[i].split(/[,;\t]/);
-        if (values.length >= 5) {
-          data.push({
-            id: values[0]?.trim(),
-            species: values[1]?.trim(),
-            breed: values[2]?.trim(),
-            gender: values[3]?.trim(),
-            date_of_birth: values[4]?.trim(),
-            status: values[5]?.trim() || 'Aktif'
-          });
+      
+      // Tablo verilerini işle
+      for (let i = headerIndex + 1; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Boş satır veya sayfa sonu kontrolü
+        if (!line || line.length < 10) continue;
+        
+        // Tablo satırını parse et (tab, space veya dikey çubuk ile ayrılmış)
+        const columns = line.split(/[\t\|]/).map(col => col.trim()).filter(col => col);
+        
+        if (columns.length >= 4) {
+          // Sıra numarası varsa atla
+          let startIdx = 0;
+          if (!isNaN(parseInt(columns[0]))) {
+            startIdx = 1;
+          }
+
+          const kupeNo = columns[startIdx];
+          const irk = columns[startIdx + 1];
+          const cinsiyet = columns[startIdx + 2];
+          const dogumTarihi = columns[startIdx + 3];
+
+          // Geçerli küpe numarası kontrolü
+          if (kupeNo && kupeNo.startsWith('TR') && kupeNo.length > 5) {
+            data.push({
+              id: kupeNo,
+              breed: irk || 'Holstein-SA',
+              gender: cinsiyet || 'ERKEK',
+              date_of_birth: dogumTarihi || '2024-01-01'
+            });
+          }
         }
       }
       
+      if (data.length === 0) {
+        throw new Error('PDF\'den hayvan verisi çıkarılamadı');
+      }
+
       return data;
     } catch (error) {
-      throw new Error('PDF dosyası işlenirken hata oluştu');
+      throw new Error(`PDF dosyası işlenirken hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
     }
   };
 
@@ -147,6 +227,7 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
     setIsProcessing(true);
     setPreviewData([]);
     setErrors([]);
+    setDocumentInfo({});
 
     try {
       let rawData;
@@ -168,6 +249,11 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
           variant: "destructive",
           title: "Hata",
           description: "Dosyada geçerli hayvan verisi bulunamadı."
+        });
+      } else if (valid.length > 0) {
+        toast({
+          title: "Başarılı",
+          description: `${valid.length} hayvan kaydı başarıyla okundu.`
         });
       }
     } catch (error) {
@@ -227,12 +313,13 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
       setFile(null);
       setPreviewData([]);
       setErrors([]);
+      setDocumentInfo({});
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Toplu Hayvan İçe Aktarma</DialogTitle>
         </DialogHeader>
@@ -240,25 +327,33 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Dosya Formatı Bilgisi</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Desteklenen Dosya Formatları
+              </CardTitle>
               <CardDescription>
-                Excel (.xlsx) veya PDF dosyası yükleyebilirsiniz. Dosyanızda şu sütunlar bulunmalıdır:
+                Bakanlık belgesi formatındaki PDF dosyaları ve Excel (.xlsx) dosyaları desteklenmektedir.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-sm space-y-1">
-                <p><strong>Küpe No:</strong> Hayvanın benzersiz kimlik numarası</p>
-                <p><strong>Tür:</strong> İnek, Koyun, Keçi, Tavuk, Diğer</p>
-                <p><strong>Cins:</strong> Hayvan cinsi (örn: Holstein)</p>
-                <p><strong>Cinsiyet:</strong> Erkek, Dişi</p>
-                <p><strong>Doğum Tarihi:</strong> YYYY-MM-DD formatında (örn: 2023-01-15)</p>
-                <p><strong>Durum:</strong> Aktif, Hamile, Hasta (opsiyonel, varsayılan: Aktif)</p>
+              <div className="text-sm space-y-2">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="font-medium text-blue-800">PDF Belgesi İçin:</p>
+                  <p className="text-blue-700">• "İŞLETMEDEKİ MEVCUT HAYVANLAR" bölümünü otomatik olarak tespit eder</p>
+                  <p className="text-blue-700">• Küpe No, Irk, Cinsiyet, Doğum Tarihi bilgilerini okur</p>
+                  <p className="text-blue-700">• Tarih formatını otomatik olarak düzenler (DD.MM.YYYY → YYYY-MM-DD)</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="font-medium text-green-800">Excel Dosyası İçin:</p>
+                  <p className="text-green-700">• Küpe No, Irk/Cins, Cinsiyet, Doğum Tarihi sütunları olmalıdır</p>
+                  <p className="text-green-700">• İşletmeye Geliş Tarihi (opsiyonel)</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <div className="space-y-2">
-            <Label htmlFor="file">Dosya Seç</Label>
+            <Label htmlFor="file">PDF Belgesi veya Excel Dosyası Seç</Label>
             <Input
               id="file"
               type="file"
@@ -272,6 +367,21 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
             <div className="text-center py-4">
               <p>Dosya işleniyor...</p>
             </div>
+          )}
+
+          {documentInfo.institution && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm text-blue-600">Belge Bilgileri</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm space-y-1">
+                  {documentInfo.institution && <p><strong>Kurum:</strong> {documentInfo.institution}</p>}
+                  {documentInfo.farmInfo && <p><strong>İşletme:</strong> {documentInfo.farmInfo}</p>}
+                  {documentInfo.date && <p><strong>İşlem Tarihi:</strong> {documentInfo.date}</p>}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {errors.length > 0 && (
@@ -307,7 +417,7 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
                       <tr className="border-b">
                         <th className="text-left p-2">Küpe No</th>
                         <th className="text-left p-2">Tür</th>
-                        <th className="text-left p-2">Cins</th>
+                        <th className="text-left p-2">Irk</th>
                         <th className="text-left p-2">Cinsiyet</th>
                         <th className="text-left p-2">Durum</th>
                         <th className="text-left p-2">Doğum Tarihi</th>
@@ -316,11 +426,15 @@ const BulkAnimalImportDialog = ({ isOpen, onOpenChange }: BulkAnimalImportDialog
                     <tbody>
                       {previewData.slice(0, 10).map((animal, index) => (
                         <tr key={index} className="border-b">
-                          <td className="p-2">{animal.id}</td>
+                          <td className="p-2 font-mono text-xs">{animal.id}</td>
                           <td className="p-2">{animal.species}</td>
                           <td className="p-2">{animal.breed}</td>
                           <td className="p-2">{animal.gender}</td>
-                          <td className="p-2">{animal.status}</td>
+                          <td className="p-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {animal.status}
+                            </span>
+                          </td>
                           <td className="p-2">{animal.date_of_birth}</td>
                         </tr>
                       ))}
