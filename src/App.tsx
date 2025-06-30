@@ -11,6 +11,8 @@ import Animals from "./pages/Animals";
 import Inventory from "./pages/Inventory";
 import InventoryItemDetails from "./pages/InventoryItemDetails";
 import Health from "./pages/Health";
+import Tasks from "./pages/Tasks";
+import FarmMap from "./pages/FarmMap";
 import Cameras from "./pages/Cameras";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -54,6 +56,8 @@ const AppRoutes = () => {
           <Route path="/inventory/:id" element={<InventoryItemDetails />} />
           <Route path="/feed-stock" element={<FeedStock />} />
           <Route path="/health" element={<Health />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/farm-map" element={<FarmMap />} />
           <Route path="/cameras" element={<Cameras />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/users" element={<Users />} />

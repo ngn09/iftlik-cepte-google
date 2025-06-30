@@ -1,7 +1,7 @@
 
 import { NavLink, useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar";
-import { LayoutDashboard, PawPrint, Warehouse, HeartPulse, Video, MessageSquare, Settings, Users, Wheat, LogOut } from "lucide-react";
+import { LayoutDashboard, PawPrint, Warehouse, HeartPulse, Video, MessageSquare, Settings, Users, Wheat, LogOut, CheckSquare, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,8 @@ const AppSidebar = () => {
     { to: "/inventory", icon: Warehouse, label: "Envanter" },
     { to: "/feed-stock", icon: Wheat, label: "Yem Stok" },
     { to: "/health", icon: HeartPulse, label: "Sağlık" },
+    { to: "/tasks", icon: CheckSquare, label: "Görevler" },
+    { to: "/farm-map", icon: Map, label: "Çiftlik Haritası" },
     { to: "/cameras", icon: Video, label: "Kameralar" },
     { to: "/chat", icon: MessageSquare, label: "Sohbet" },
     { to: "/users", icon: Users, label: "Kullanıcılar" },
