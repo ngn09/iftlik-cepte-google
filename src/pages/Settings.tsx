@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,15 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Settings as SettingsIcon, Users, Bell, Shield, Database, Plus, Edit, Trash2, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FarmBranding } from "@/components/FarmBranding";
+import { useFarmBranding } from "@/hooks/useFarmBranding";
 
 const Settings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [users, setUsers] = useState([
-    { id: 1, name: "Admin Kullanıcı", email: "admin@ciftlik.com", role: "Yönetici", status: "Aktif" },
-    { id: 2, name: "Çiftlik İşçisi", email: "isci@ciftlik.com", role: "İşçi", status: "Aktif" },
-    { id: 3, name: "Veteriner", email: "vet@ciftlik.com", role: "Veteriner", status: "Aktif" }
-  ]);
+  const { farmName, farmLogo, updateBranding } = useFarmBranding();
 
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
@@ -24,13 +23,6 @@ const Settings = () => {
     healthAlerts: true,
     inventoryAlerts: true
   });
-
-  const handleUserAction = (action: string, userId?: number) => {
-    toast({
-      title: "Kullanıcı İşlemi",
-      description: `${action} işlemi gerçekleştirildi.`
-    });
-  };
 
   const handleNotificationChange = (key: string, value: boolean) => {
     setNotifications(prev => ({ ...prev, [key]: value }));
@@ -75,81 +67,12 @@ const Settings = () => {
       <h1 className="text-3xl font-bold mb-6">Ayarlar</h1>
       
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Kullanıcı Yönetimi */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Kullanıcı Yönetimi
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Kullanıcı rollerini ve izinlerini yönetin
-                </p>
-                <button className="w-full bg-primary text-primary-foreground py-2 rounded-lg hover:bg-primary/90">
-                  Kullanıcıları Yönet
-                </button>
-              </CardContent>
-            </Card>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Kullanıcı Yönetimi</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Kullanıcılar</h3>
-                <button
-                  onClick={() => handleUserAction("Yeni kullanıcı eklendi")}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4" />
-                  Yeni Kullanıcı
-                </button>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ad</TableHead>
-                    <TableHead>E-posta</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Durum</TableHead>
-                    <TableHead>İşlemler</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.role}</TableCell>
-                      <TableCell>{user.status}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleUserAction("Kullanıcı düzenlendi", user.id)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleUserAction("Kullanıcı silindi", user.id)}
-                            className="p-1 hover:bg-gray-100 rounded text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Çiftlik Markası */}
+        <FarmBranding 
+          farmName={farmName}
+          farmLogo={farmLogo}
+          onUpdate={updateBranding}
+        />
 
         {/* Bildirim Ayarları */}
         <Dialog>

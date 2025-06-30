@@ -5,10 +5,12 @@ import { LayoutDashboard, PawPrint, Warehouse, HeartPulse, Video, MessageSquare,
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useFarmBranding } from "@/hooks/useFarmBranding";
 
 const AppSidebar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { farmName, farmLogo } = useFarmBranding();
   
   const menuItems = [
     { to: "/", icon: LayoutDashboard, label: "Gösterge Paneli" },
@@ -47,7 +49,16 @@ const AppSidebar = () => {
   return (
     <Sidebar className="border-r">
       <SidebarHeader>
-        <h2 className="text-lg font-semibold tracking-tight">Çiftliğim</h2>
+        <div className="flex items-center gap-3 p-2">
+          {farmLogo && (
+            <img 
+              src={farmLogo} 
+              alt="Logo" 
+              className="h-8 w-8 object-contain rounded"
+            />
+          )}
+          <h2 className="text-lg font-semibold tracking-tight">{farmName}</h2>
+        </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col justify-between">
         <SidebarMenu>
