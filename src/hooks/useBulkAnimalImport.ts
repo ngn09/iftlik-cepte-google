@@ -23,6 +23,8 @@ export const useBulkAnimalImport = () => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
+    console.log('Dosya seçildi:', selectedFile.name, selectedFile.type, selectedFile.size);
+    
     setFile(selectedFile);
     setIsProcessing(true);
     setPreviewData([]);
@@ -33,18 +35,28 @@ export const useBulkAnimalImport = () => {
       let rawData;
       let docInfo: DocumentInfo = {};
       
-      if (selectedFile.type.includes('excel') || selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls')) {
+      if (selectedFile.type.includes('excel') || 
+          selectedFile.name.endsWith('.xlsx') || 
+          selectedFile.name.endsWith('.xls')) {
+        console.log('Excel dosyası işleniyor...');
         rawData = await processExcelFile(selectedFile);
-      } else if (selectedFile.type === 'application/pdf' || selectedFile.name.endsWith('.pdf')) {
+      } else if (selectedFile.type === 'application/pdf' || 
+                 selectedFile.name.endsWith('.pdf')) {
+        console.log('PDF dosyası işleniyor...');
         const result = await processPDFFile(selectedFile);
         rawData = result.data;
         docInfo = result.documentInfo;
         setDocumentInfo(docInfo);
+        console.log('PDF işleme tamamlandı, veri sayısı:', rawData.length);
       } else {
         throw new Error('Desteklenmeyen dosya formatı. Lütfen Excel (.xlsx) veya PDF dosyası seçin.');
       }
 
+      console.log('Ham veri:', rawData);
+      
       const { valid, errors } = validateAnimalData(rawData);
+      console.log('Doğrulama sonucu - Geçerli:', valid.length, 'Hatalı:', errors.length);
+      
       setPreviewData(valid);
       setErrors(errors);
 
@@ -52,19 +64,22 @@ export const useBulkAnimalImport = () => {
         toast({
           variant: "destructive",
           title: "Hata",
-          description: "Dosyada geçerli hayvan verisi bulunamadı."
+          description: "Dosyada geçerli hayvan verisi bulunamadı. Detaylar için hata listesini kontrol edin."
         });
       } else if (valid.length > 0) {
         toast({
           title: "Başarılı",
-          description: `${valid.length} hayvan kaydı başarıyla okundu.`
+          description: `${valid.length} hayvan kaydı başarıyla okundu.${errors.length > 0 ? ` ${errors.length} hata ile karşılaşıldı.` : ''}`
         });
       }
     } catch (error) {
+      console.error('Dosya işleme hatası:', error);
+      const errorMessage = error instanceof Error ? error.message : "Dosya işlenirken hata oluştu";
+      setErrors([errorMessage]);
       toast({
         variant: "destructive",
         title: "Dosya İşleme Hatası",
-        description: error instanceof Error ? error.message : "Dosya işlenirken hata oluştu"
+        description: errorMessage
       });
     } finally {
       setIsProcessing(false);
@@ -78,7 +93,7 @@ export const useBulkAnimalImport = () => {
         title: "Hata",
         description: "İçe aktarılacak hayvan verisi bulunamadı."
       });
-      return;
+      return false;
     }
 
     setIsProcessing(true);
