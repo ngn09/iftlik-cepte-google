@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Barn, Truck, Droplets, Zap, Home, Plus } from "lucide-react";
+import { MapPin, Home, Truck, Droplets, Zap, Plus } from "lucide-react";
 
 interface MapLocation {
   id: string;
@@ -90,7 +89,7 @@ const FarmMap = () => {
 
   const getLocationIcon = (type: string) => {
     switch (type) {
-      case 'Ahır': return <Barn className="h-6 w-6" />;
+      case 'Ahır': return <Home className="h-6 w-6" />;
       case 'Yem Deposu': return <Home className="h-6 w-6" />;
       case 'Su Deposu': return <Droplets className="h-6 w-6" />;
       case 'Ofis': return <Home className="h-6 w-6" />;
@@ -189,7 +188,7 @@ const FarmMap = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ortalama Kapasite</CardTitle>
-            <Barn className="h-4 w-4 text-blue-600" />
+            <Home className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
