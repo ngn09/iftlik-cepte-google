@@ -26,8 +26,10 @@ const AppSidebar = () => {
   ];
 
   const getNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center p-2 rounded-lg text-base font-normal ${
-      isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'
+    `flex items-center p-3 rounded-lg text-base font-medium transition-colors duration-200 ${
+      isActive 
+        ? 'bg-primary text-primary-foreground shadow-sm' 
+        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
     }`;
 
   const handleLogout = async () => {
@@ -47,43 +49,46 @@ const AppSidebar = () => {
   };
 
   return (
-    <Sidebar className="border-r">
-      <SidebarHeader>
-        <div className="flex items-center gap-3 p-2">
+    <Sidebar className="border-r border-sidebar-border bg-sidebar">
+      <SidebarHeader className="p-4 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
           {farmLogo && (
             <img 
               src={farmLogo} 
               alt="Logo" 
-              className="h-8 w-8 object-contain rounded"
+              className="h-10 w-10 object-contain rounded-lg bg-white p-1 shadow-sm"
             />
           )}
-          <h2 className="text-lg font-semibold tracking-tight">{farmName}</h2>
+          <h2 className="text-xl font-bold tracking-tight text-sidebar-foreground truncate">{farmName}</h2>
         </div>
       </SidebarHeader>
-      <SidebarContent className="flex flex-col justify-between">
-        <SidebarMenu>
+      
+      <SidebarContent className="flex flex-col justify-between p-4">
+        <SidebarMenu className="space-y-2">
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.label}>
               <NavLink to={item.to} className={getNavLinkClass} end>
-                <item.icon className="h-5 w-5 mr-3" />
-                <span>{item.label}</span>
+                <item.icon className="h-6 w-6 mr-4 flex-shrink-0" />
+                <span className="text-base font-medium">{item.label}</span>
               </NavLink>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
-        <div className="p-4 border-t mt-4 space-y-2">
-            <NavLink to="/settings" className={getNavLinkClass} end>
-                <Settings className="h-5 w-5 mr-3" />
-                <span>Ayarlar</span>
-            </NavLink>
-            <Button
-              variant="ghost"
-              onClick={handleLogout}
-              className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50"
-            >
-              <LogOut className="h-5 w-5 mr-3" />
-              <span>Çıkış Yap</span>
-            </Button>
+        
+        <div className="border-t border-sidebar-border pt-4 mt-4 space-y-2">
+          <NavLink to="/settings" className={getNavLinkClass} end>
+            <Settings className="h-6 w-6 mr-4 flex-shrink-0" />
+            <span className="text-base font-medium">Ayarlar</span>
+          </NavLink>
+          
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className="w-full justify-start p-3 h-auto text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 dark:hover:text-red-400 transition-colors duration-200"
+          >
+            <LogOut className="h-6 w-6 mr-4 flex-shrink-0" />
+            <span>Çıkış Yap</span>
+          </Button>
         </div>
       </SidebarContent>
     </Sidebar>
