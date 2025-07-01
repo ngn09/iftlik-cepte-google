@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera } from '@/data/cameras';
+import { Camera } from '@/hooks/useCameras';
 import { Trash2, PlusCircle } from 'lucide-react';
 import { toast } from "sonner";
 
@@ -27,8 +27,11 @@ const CameraSettingsDialog = ({ isOpen, onOpenChange, cameras, setCameras }: Cam
     const newCamera: Camera = {
       id: new Date().toISOString(),
       name: newCameraName,
-      streamUrl: newCameraUrl || "placeholder.mp4",
-      status: 'online', // Status can be updated based on real connection status
+      stream_url: newCameraUrl || "placeholder.mp4",
+      status: 'online',
+      farm_id: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     setCameras([...cameras, newCamera]);
     toast.success(`"${newCameraName}" adlı kamera eklendi.`);
@@ -76,7 +79,7 @@ const CameraSettingsDialog = ({ isOpen, onOpenChange, cameras, setCameras }: Cam
                 <div key={camera.id} className="flex items-center justify-between rounded-md border p-2">
                   <div>
                     <p className="font-medium">{camera.name}</p>
-                    <p className="text-xs text-muted-foreground truncate max-w-[300px]">{camera.streamUrl}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[300px]">{camera.stream_url}</p>
                   </div>
                   <Button variant="ghost" size="icon" onClick={() => handleDeleteCamera(camera.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />

@@ -1,5 +1,5 @@
 
-import { FeedItem } from "./feedStock";
+import { FeedStockItem } from '@/hooks/useFeedStock';
 
 export interface AnimalGroup {
   id: number;
@@ -15,7 +15,7 @@ export interface RationItem {
 export interface Ration {
   id: number;
   animalGroupId: number;
-  name:string;
+  name: string;
   items: RationItem[];
   isArchived?: boolean;
 }
@@ -34,11 +34,11 @@ export const rations: Ration[] = [
     animalGroupId: 1,
     name: 'Yüksek Verim Rasyonu',
     items: [
-      { feedStockId: 1, amount: 20 }, // Mısır Silajı
-      { feedStockId: 2, amount: 8 },  // Süt Yemi
-      { feedStockId: 3, amount: 4 },  // Arpa Ezmesi
-      { feedStockId: 4, amount: 5 },  // Yonca Kuru Otu
-      { feedStockId: 5, amount: 0.15 },// Mineral Tozu
+      { feedStockId: 1, amount: 20 },
+      { feedStockId: 2, amount: 8 },
+      { feedStockId: 3, amount: 4 },
+      { feedStockId: 4, amount: 5 },
+      { feedStockId: 5, amount: 0.15 },
     ],
   },
   {
@@ -46,9 +46,9 @@ export const rations: Ration[] = [
     animalGroupId: 3,
     name: 'Kuru Dönem Rasyonu',
     items: [
-      { feedStockId: 1, amount: 15 }, // Mısır Silajı
-      { feedStockId: 4, amount: 7 },  // Yonca Kuru Otu
-      { feedStockId: 5, amount: 0.1 }, // Mineral Tozu
+      { feedStockId: 1, amount: 15 },
+      { feedStockId: 4, amount: 7 },
+      { feedStockId: 5, amount: 0.1 },
     ],
   },
 ];

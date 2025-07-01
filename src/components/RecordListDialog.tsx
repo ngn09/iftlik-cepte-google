@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { HealthRecord } from '@/data/health';
+import { HealthRecord } from '@/hooks/useHealthRecords';
 import { Badge } from "@/components/ui/badge";
 
 interface RecordListDialogProps {
@@ -33,7 +33,7 @@ const RecordListDialog = ({ isOpen, onOpenChange, records, title, description }:
                     <TableBody>
                         {records.length > 0 ? records.map(record => (
                             <TableRow key={record.id}>
-                                <TableCell>{record.animalTag}</TableCell>
+                                <TableCell>{record.animal_tag}</TableCell>
                                 <TableCell>{new Date(record.date).toLocaleDateString('tr-TR')}</TableCell>
                                 <TableCell>{record.diagnosis}</TableCell>
                                 <TableCell>

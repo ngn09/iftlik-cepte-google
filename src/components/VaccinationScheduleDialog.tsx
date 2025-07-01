@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { HealthRecord } from '@/data/health';
+import { HealthRecord } from '@/hooks/useHealthRecords';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
@@ -59,4 +59,3 @@ const VaccinationScheduleDialog = ({
 };
 
 export default VaccinationScheduleDialog;
-
