@@ -6,4 +6,4 @@ export type { FeedStockItem } from '@/hooks/useFeedStock';
 export type FeedItem = FeedStockItem;
 
 // Örnek veriler kaldırıldı - kullanıcılar kendi verilerini ekleyecek
-export const mockFeedStock: any[] = [];
+export const mockFeedStock: FeedStockItem[] = [];

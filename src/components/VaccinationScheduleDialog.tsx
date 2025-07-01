@@ -28,6 +28,23 @@ const VaccinationScheduleDialog = ({
   onArchive,
   onViewMedia
 }: VaccinationScheduleDialogProps) => {
+  // Transform HealthRecord to match HealthRecordsTable interface
+  const transformRecord = (record: HealthRecord) => ({
+    id: record.id,
+    animalTag: record.animal_tag,
+    date: record.date,
+    diagnosis: record.diagnosis,
+    treatment: record.treatment,
+    notes: record.notes,
+    vetName: record.vet_name,
+    outcome: record.outcome,
+    isArchived: record.is_archived || false,
+    mediaUrls: []
+  });
+
+  const transformedPlanned = planned.map(transformRecord);
+  const transformedCompleted = completed.map(transformRecord);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
@@ -47,10 +64,28 @@ const VaccinationScheduleDialog = ({
             </TabsTrigger>
           </TabsList>
           <TabsContent value="planned" className="mt-4">
-            <HealthRecordsTable records={planned} onEdit={onEdit} onArchive={onArchive} isArchive={false} onViewMedia={onViewMedia} />
+            <HealthRecordsTable 
+              records={transformedPlanned} 
+              onEdit={(record) => {
+                const originalRecord = planned.find(p => p.id === record.id);
+                if (originalRecord) onEdit(originalRecord);
+              }} 
+              onArchive={onArchive} 
+              isArchive={false} 
+              onViewMedia={onViewMedia} 
+            />
           </TabsContent>
           <TabsContent value="completed" className="mt-4">
-            <HealthRecordsTable records={completed} onEdit={onEdit} onArchive={onArchive} isArchive={false} onViewMedia={onViewMedia} />
+            <HealthRecordsTable 
+              records={transformedCompleted} 
+              onEdit={(record) => {
+                const originalRecord = completed.find(c => c.id === record.id);
+                if (originalRecord) onEdit(originalRecord);
+              }} 
+              onArchive={onArchive} 
+              isArchive={false} 
+              onViewMedia={onViewMedia} 
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>

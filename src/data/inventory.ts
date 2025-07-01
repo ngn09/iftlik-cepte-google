@@ -3,7 +3,7 @@
 export type { InventoryItem } from '@/hooks/useInventory';
 
 // Örnek veriler kaldırıldı - kullanıcılar kendi verilerini ekleyecek
-export const mockInventory: any[] = [];
+export const mockInventory: InventoryItem[] = [];
 
 // Eski fixedAssets export'unu kaldır ve yeni türle değiştir
 export const fixedAssets: InventoryItem[] = [];
