@@ -1,4 +1,6 @@
 
+import { InventoryItem } from '@/hooks/useInventory';
+
 // Inventory hook'undan InventoryItem türünü export et
 export type { InventoryItem } from '@/hooks/useInventory';
 

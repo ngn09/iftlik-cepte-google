@@ -1,4 +1,6 @@
 
+import { FeedStockItem } from '@/hooks/useFeedStock';
+
 // FeedStock hook'undan FeedStockItem türünü export et
 export type { FeedStockItem } from '@/hooks/useFeedStock';
 
