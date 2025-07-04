@@ -22,9 +22,10 @@ interface Task {
 const Tasks = () => {
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
 
   // Sample data - in real app this would come from database
-  const [tasks] = useState<Task[]>([
+  const [tasks, setTasks] = useState<Task[]>([
     {
       id: "1",
       title: "Sabah Yem Dağıtımı",
@@ -70,6 +71,35 @@ const Tasks = () => {
       createdAt: "2024-01-15"
     }
   ]);
+
+  const handleSaveTask = (taskData: Task) => {
+    if (editingTask) {
+      // Update existing task
+      setTasks(tasks.map(task => task.id === taskData.id ? taskData : task));
+    } else {
+      // Add new task
+      setTasks([...tasks, taskData]);
+    }
+    setEditingTask(undefined);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setIsFormDialogOpen(true);
+  };
+
+  const handleCompleteTask = (taskId: string) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId 
+        ? { ...task, status: 'Tamamlandı' as const }
+        : task
+    ));
+  };
+
+  const handleNewTask = () => {
+    setEditingTask(undefined);
+    setIsFormDialogOpen(true);
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -120,11 +150,13 @@ const Tasks = () => {
       <TaskFormDialog 
         isOpen={isFormDialogOpen}
         onOpenChange={setIsFormDialogOpen}
+        task={editingTask}
+        onSave={handleSaveTask}
       />
       
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Görevler</h1>
-        <Button onClick={() => setIsFormDialogOpen(true)}>
+        <Button onClick={handleNewTask}>
           <Plus className="h-4 w-4" />
           Yeni Görev Ekle
         </Button>
@@ -212,13 +244,18 @@ const Tasks = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditTask(task)}
+                        >
                           Düzenle
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
                           disabled={task.status === 'Tamamlandı'}
+                          onClick={() => handleCompleteTask(task.id)}
                         >
                           {task.status === 'Tamamlandı' ? 'Tamamlandı' : 'Tamamla'}
                         </Button>
