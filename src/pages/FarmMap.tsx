@@ -3,23 +3,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Home, Truck, Droplets, Zap, Plus } from "lucide-react";
+import { MapPin, Home, Truck, Droplets, Zap, Plus, Grid3X3, Users, Wheat } from "lucide-react";
+import { useAnimals } from "@/hooks/useAnimals";
+import { useFeedStock } from "@/hooks/useFeedStock";
 
 interface MapLocation {
   id: string;
   name: string;
-  type: 'Ahır' | 'Yem Deposu' | 'Su Deposu' | 'Ofis' | 'Makine Parkı' | 'Mera' | 'Diğer';
+  type: 'Ahır' | 'Yem Deposu' | 'Su Deposu' | 'Ofis' | 'Makine Parkı' | 'Mera' | 'Padok';
   status: 'Aktif' | 'Bakımda' | 'Kapalı';
   coordinates: { x: number; y: number };
+  size: { width: number; height: number };
   capacity?: number;
   currentOccupancy?: number;
   description: string;
   lastUpdated: string;
+  animals?: {
+    species: string;
+    breed: string;
+    count: number;
+    feedType?: string;
+  }[];
 }
 
-const FarmMap = () => {
-  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const FarmMap = () => {
+    const { animals } = useAnimals();
+    const { feedStock } = useFeedStock();
+    const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
+    const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
   // Sample farm locations - in real app this would come from database
   const [locations] = useState<MapLocation[]>([
@@ -29,10 +40,15 @@ const FarmMap = () => {
       type: "Ahır",
       status: "Aktif",
       coordinates: { x: 40, y: 30 },
+      size: { width: 120, height: 80 },
       capacity: 150,
       currentOccupancy: 142,
       description: "Süt ineklerinin barındırıldığı ana ahır",
-      lastUpdated: "2024-01-15"
+      lastUpdated: "2024-01-15",
+      animals: [
+        { species: "İnek", breed: "Holstein", count: 85, feedType: "Yüksek Proteinli Karma" },
+        { species: "İnek", breed: "Simmental", count: 57, feedType: "Standart Karma" }
+      ]
     },
     {
       id: "2",
@@ -40,6 +56,7 @@ const FarmMap = () => {
       type: "Yem Deposu",
       status: "Aktif",
       coordinates: { x: 70, y: 20 },
+      size: { width: 60, height: 40 },
       capacity: 500,
       currentOccupancy: 320,
       description: "Ana yem deposu - karma yem ve saman",
@@ -51,6 +68,7 @@ const FarmMap = () => {
       type: "Su Deposu",
       status: "Aktif",
       coordinates: { x: 20, y: 60 },
+      size: { width: 40, height: 40 },
       capacity: 10000,
       currentOccupancy: 8500,
       description: "Ana su deposu - 10.000 litre kapasiteli",
@@ -62,6 +80,7 @@ const FarmMap = () => {
       type: "Ofis",
       status: "Aktif",
       coordinates: { x: 80, y: 70 },
+      size: { width: 50, height: 30 },
       description: "Yönetim ofisi ve misafir evi",
       lastUpdated: "2024-01-15"
     },
@@ -71,6 +90,7 @@ const FarmMap = () => {
       type: "Makine Parkı",
       status: "Aktif",
       coordinates: { x: 60, y: 80 },
+      size: { width: 80, height: 50 },
       description: "Traktör ve tarım makineleri park alanı",
       lastUpdated: "2024-01-15"
     },
@@ -80,10 +100,44 @@ const FarmMap = () => {
       type: "Mera",
       status: "Aktif",
       coordinates: { x: 30, y: 10 },
+      size: { width: 100, height: 60 },
       capacity: 50,
       currentOccupancy: 35,
       description: "Kuzey taraftaki otlatma alanı",
-      lastUpdated: "2024-01-15"
+      lastUpdated: "2024-01-15",
+      animals: [
+        { species: "İnek", breed: "Angus", count: 35, feedType: "Doğal Otlak" }
+      ]
+    },
+    {
+      id: "7",
+      name: "Padok A1",
+      type: "Padok",
+      status: "Aktif",
+      coordinates: { x: 45, y: 40 },
+      size: { width: 30, height: 25 },
+      capacity: 20,
+      currentOccupancy: 18,
+      description: "Genç düveler için padok",
+      lastUpdated: "2024-01-15",
+      animals: [
+        { species: "İnek", breed: "Holstein", count: 18, feedType: "Büyüme Rasyonu" }
+      ]
+    },
+    {
+      id: "8",
+      name: "Padok A2",
+      type: "Padok",
+      status: "Aktif",
+      coordinates: { x: 55, y: 40 },
+      size: { width: 30, height: 25 },
+      capacity: 15,
+      currentOccupancy: 12,
+      description: "Damızlık inekler için padok",
+      lastUpdated: "2024-01-15",
+      animals: [
+        { species: "İnek", breed: "Jersey", count: 12, feedType: "Damızlık Rasyonu" }
+      ]
     }
   ]);
 
@@ -220,46 +274,149 @@ const FarmMap = () => {
             </CardHeader>
             <CardContent>
               {viewMode === 'map' ? (
-                <div className="relative bg-green-100 rounded-lg overflow-hidden" style={{ height: '500px' }}>
-                  {/* Farm Map Background */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-green-200 to-green-300">
-                    {/* Grid lines for better visualization */}
-                    <div className="absolute inset-0 opacity-20">
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <div key={`h-${i}`} className="absolute border-t border-green-400" style={{ top: `${i * 10}%`, width: '100%' }} />
+                <div className="relative bg-slate-900 rounded-lg overflow-hidden border-2 border-slate-600" style={{ height: '600px' }}>
+                  {/* Blueprint Grid Background */}
+                  <div className="absolute inset-0">
+                    {/* Major grid lines */}
+                    <div className="absolute inset-0 opacity-40">
+                      {Array.from({ length: 20 }).map((_, i) => (
+                        <div key={`major-h-${i}`} className="absolute border-t border-slate-500" style={{ top: `${i * 5}%`, width: '100%' }} />
                       ))}
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <div key={`v-${i}`} className="absolute border-l border-green-400" style={{ left: `${i * 10}%`, height: '100%' }} />
+                      {Array.from({ length: 20 }).map((_, i) => (
+                        <div key={`major-v-${i}`} className="absolute border-l border-slate-500" style={{ left: `${i * 5}%`, height: '100%' }} />
+                      ))}
+                    </div>
+                    {/* Minor grid lines */}
+                    <div className="absolute inset-0 opacity-20">
+                      {Array.from({ length: 100 }).map((_, i) => (
+                        <div key={`minor-h-${i}`} className="absolute border-t border-slate-600" style={{ top: `${i * 1}%`, width: '100%' }} />
+                      ))}
+                      {Array.from({ length: 100 }).map((_, i) => (
+                        <div key={`minor-v-${i}`} className="absolute border-l border-slate-600" style={{ left: `${i * 1}%`, height: '100%' }} />
                       ))}
                     </div>
                   </div>
                   
-                  {/* Location Markers */}
+                  {/* Location Buildings/Areas */}
                   {locations.map((location) => (
                     <div
                       key={location.id}
-                      className={`absolute cursor-pointer transform -translate-x-1/2 -translate-y-1/2 ${getLocationColor(location.type)} rounded-full p-2 text-white shadow-lg hover:scale-110 transition-transform`}
+                      className="absolute cursor-pointer group transition-all duration-200 hover:scale-105"
                       style={{
                         left: `${location.coordinates.x}%`,
-                        top: `${location.coordinates.y}%`
+                        top: `${location.coordinates.y}%`,
+                        width: `${location.size.width}px`,
+                        height: `${location.size.height}px`,
+                        transform: 'translate(-50%, -50%)'
                       }}
                       onClick={() => setSelectedLocation(location)}
-                      title={location.name}
                     >
-                      {getLocationIcon(location.type)}
+                      {/* Building Rectangle */}
+                      <div className={`
+                        w-full h-full border-2 border-slate-300 bg-slate-800/80 rounded-sm
+                        ${selectedLocation?.id === location.id ? 'border-blue-400 bg-blue-900/40' : ''}
+                        ${location.type === 'Ahır' ? 'border-blue-400' : ''}
+                        ${location.type === 'Padok' ? 'border-green-400' : ''}
+                        ${location.type === 'Yem Deposu' ? 'border-yellow-400' : ''}
+                        ${location.type === 'Su Deposu' ? 'border-cyan-400' : ''}
+                        ${location.type === 'Mera' ? 'border-emerald-400 bg-emerald-900/20' : ''}
+                        relative overflow-hidden
+                      `}>
+                        {/* Location Name */}
+                        <div className="absolute top-1 left-1 text-xs text-slate-200 font-mono">
+                          {location.name}
+                        </div>
+                        
+                        {/* Type Badge */}
+                        <div className="absolute top-1 right-1">
+                          <Badge variant="secondary" className="text-xs h-5">
+                            {location.type}
+                          </Badge>
+                        </div>
+                        
+                        {/* Animal Information */}
+                        {location.animals && location.animals.length > 0 && (
+                          <div className="absolute bottom-1 left-1 right-1 space-y-1">
+                            {location.animals.map((animal, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-xs text-slate-300 bg-slate-700/80 px-1 py-0.5 rounded">
+                                <div className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  <span>{animal.breed}</span>
+                                </div>
+                                <Badge variant="outline" className="text-xs h-4 text-slate-300 border-slate-500">
+                                  {animal.count}
+                                </Badge>
+                              </div>
+                            ))}
+                            {location.animals[0]?.feedType && (
+                              <div className="flex items-center gap-1 text-xs text-slate-400">
+                                <Wheat className="h-3 w-3" />
+                                <span className="truncate">{location.animals[0].feedType}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Capacity Info for Non-Animal Locations */}
+                        {!location.animals && location.capacity && (
+                          <div className="absolute bottom-1 left-1 right-1">
+                            <div className="text-xs text-slate-300 bg-slate-700/80 px-1 py-0.5 rounded flex justify-between">
+                              <span>Kapasite</span>
+                              <span>{getOccupancyPercentage(location)}%</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Status Indicator */}
+                        <div className={`
+                          absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-slate-900
+                          ${location.status === 'Aktif' ? 'bg-green-400' : ''}
+                          ${location.status === 'Bakımda' ? 'bg-yellow-400' : ''}
+                          ${location.status === 'Kapalı' ? 'bg-red-400' : ''}
+                        `} />
+                      </div>
+                      
+                      {/* Hover Info Tooltip */}
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-slate-200 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-slate-600 z-10">
+                        {location.description}
+                      </div>
                     </div>
                   ))}
                   
+                  {/* Blueprint Title */}
+                  <div className="absolute bottom-4 left-4 text-slate-300">
+                    <div className="text-xs font-mono">ÇİFTLİK KROKI - {new Date().toLocaleDateString('tr-TR')}</div>
+                    <div className="text-xs font-mono opacity-70">ÖLÇEK: 1:500</div>
+                  </div>
+                  
                   {/* Legend */}
-                  <div className="absolute top-4 right-4 bg-white rounded-lg p-4 shadow-lg">
-                    <h4 className="font-semibold mb-2">Konum Türleri</h4>
-                    <div className="space-y-1 text-sm">
-                      {Array.from(new Set(locations.map(l => l.type))).map(type => (
-                        <div key={type} className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${getLocationColor(type)}`} />
-                          <span>{type}</span>
-                        </div>
-                      ))}
+                  <div className="absolute top-4 right-4 bg-slate-800/90 rounded-lg p-3 border border-slate-600">
+                    <h4 className="font-mono text-sm text-slate-200 mb-2">LEJANt</h4>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex items-center gap-2 text-slate-300">
+                        <div className="w-3 h-3 border border-blue-400 bg-slate-800" />
+                        <span>Ahır</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-300">
+                        <div className="w-3 h-3 border border-green-400 bg-slate-800" />
+                        <span>Padok</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-300">
+                        <div className="w-3 h-3 border border-yellow-400 bg-slate-800" />
+                        <span>Yem Deposu</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-300">
+                        <div className="w-3 h-3 border border-cyan-400 bg-slate-800" />
+                        <span>Su Deposu</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-300">
+                        <div className="w-3 h-3 border border-emerald-400 bg-emerald-900/20" />
+                        <span>Mera</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-600 text-slate-400">
+                        <div className="w-2 h-2 bg-green-400 rounded-full" />
+                        <span className="text-xs">Aktif</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -324,49 +481,84 @@ const FarmMap = () => {
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium">Tür:</label>
-                      <p className="text-sm">{selectedLocation.type}</p>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium">Açıklama:</label>
-                      <p className="text-sm">{selectedLocation.description}</p>
-                    </div>
-                    
-                    {selectedLocation.capacity && (
-                      <div>
-                        <label className="text-sm font-medium">Kapasite:</label>
-                        <p className="text-sm">
-                          {selectedLocation.currentOccupancy} / {selectedLocation.capacity} 
-                          <span className="text-muted-foreground ml-2">
-                            ({getOccupancyPercentage(selectedLocation)}% dolu)
-                          </span>
-                        </p>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all"
-                            style={{ width: `${getOccupancyPercentage(selectedLocation)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <label className="text-sm font-medium">Son Güncelleme:</label>
-                      <p className="text-sm">
-                        {new Date(selectedLocation.lastUpdated).toLocaleDateString('tr-TR')}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium">Koordinatlar:</label>
-                      <p className="text-sm">
-                        X: {selectedLocation.coordinates.x}%, Y: {selectedLocation.coordinates.y}%
-                      </p>
-                    </div>
-                  </div>
+                   <div className="space-y-3">
+                     <div>
+                       <label className="text-sm font-medium">Tür:</label>
+                       <p className="text-sm">{selectedLocation.type}</p>
+                     </div>
+                     
+                     <div>
+                       <label className="text-sm font-medium">Açıklama:</label>
+                       <p className="text-sm">{selectedLocation.description}</p>
+                     </div>
+                     
+                     {/* Animal Information Section */}
+                     {selectedLocation.animals && selectedLocation.animals.length > 0 && (
+                       <div>
+                         <label className="text-sm font-medium">Hayvan Bilgileri:</label>
+                         <div className="mt-2 space-y-2">
+                           {selectedLocation.animals.map((animal, idx) => (
+                             <div key={idx} className="bg-slate-50 p-3 rounded-lg border">
+                               <div className="flex justify-between items-start mb-2">
+                                 <div>
+                                   <p className="font-medium text-sm">{animal.species} - {animal.breed}</p>
+                                   <p className="text-xs text-muted-foreground">Sayı: {animal.count} baş</p>
+                                 </div>
+                                 <Badge variant="outline" className="text-xs">
+                                   {animal.count}
+                                 </Badge>
+                               </div>
+                               {animal.feedType && (
+                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                   <Wheat className="h-3 w-3" />
+                                   <span>Rasyon: {animal.feedType}</span>
+                                 </div>
+                               )}
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                     
+                     {selectedLocation.capacity && (
+                       <div>
+                         <label className="text-sm font-medium">Kapasite:</label>
+                         <p className="text-sm">
+                           {selectedLocation.currentOccupancy} / {selectedLocation.capacity} 
+                           <span className="text-muted-foreground ml-2">
+                             ({getOccupancyPercentage(selectedLocation)}% dolu)
+                           </span>
+                         </p>
+                         <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                           <div 
+                             className="bg-blue-600 h-2 rounded-full transition-all"
+                             style={{ width: `${getOccupancyPercentage(selectedLocation)}%` }}
+                           />
+                         </div>
+                       </div>
+                     )}
+                     
+                     <div>
+                       <label className="text-sm font-medium">Son Güncelleme:</label>
+                       <p className="text-sm">
+                         {new Date(selectedLocation.lastUpdated).toLocaleDateString('tr-TR')}
+                       </p>
+                     </div>
+                     
+                     <div>
+                       <label className="text-sm font-medium">Koordinatlar:</label>
+                       <p className="text-sm">
+                         X: {selectedLocation.coordinates.x}%, Y: {selectedLocation.coordinates.y}%
+                       </p>
+                     </div>
+                     
+                     <div>
+                       <label className="text-sm font-medium">Boyut:</label>
+                       <p className="text-sm">
+                         {selectedLocation.size.width} x {selectedLocation.size.height} piksel
+                       </p>
+                     </div>
+                   </div>
                   
                   <div className="flex gap-2 pt-4">
                     <Button size="sm" className="w-full">
