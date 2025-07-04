@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Home, Truck, Droplets, Zap, Plus, Grid3X3, Users, Wheat } from "lucide-react";
+import { MapPin, Home, Truck, Droplets, Zap, Plus, Grid3X3, Users, Wheat, Edit, Move, Square } from "lucide-react";
 import { useAnimals } from "@/hooks/useAnimals";
 import { useFeedStock } from "@/hooks/useFeedStock";
+import FarmLocationEditor from "@/components/FarmLocationEditor";
 
 interface MapLocation {
   id: string;
@@ -31,9 +32,15 @@ interface MapLocation {
     const { feedStock } = useFeedStock();
     const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [editingLocation, setEditingLocation] = useState<MapLocation | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const mapRef = useRef<HTMLDivElement>(null);
 
   // Sample farm locations - in real app this would come from database
-  const [locations] = useState<MapLocation[]>([
+  const [locations, setLocations] = useState<MapLocation[]>([
     {
       id: "1",
       name: "Ana Ahır",
@@ -179,6 +186,51 @@ interface MapLocation {
     return Math.round((location.currentOccupancy / location.capacity) * 100);
   };
 
+  // Editor handlers
+  const openEditor = (location?: MapLocation) => {
+    setEditingLocation(location || null);
+    setIsEditorOpen(true);
+  };
+
+  const handleSaveLocation = (location: MapLocation) => {
+    if (editingLocation) {
+      // Update existing location
+      setLocations(prev => prev.map(loc => loc.id === location.id ? location : loc));
+    } else {
+      // Add new location
+      setLocations(prev => [...prev, location]);
+    }
+    setSelectedLocation(location);
+  };
+
+  const handleDeleteLocation = (locationId: string) => {
+    setLocations(prev => prev.filter(loc => loc.id !== locationId));
+    setSelectedLocation(null);
+  };
+
+  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isEditMode || !mapRef.current) return;
+    
+    const rect = mapRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    // Create new location at click position
+    const newLocation: MapLocation = {
+      id: `loc_${Date.now()}`,
+      name: "Yeni Konum",
+      type: "Padok",
+      status: "Aktif",
+      coordinates: { x, y },
+      size: { width: 80, height: 60 },
+      description: "",
+      lastUpdated: new Date().toISOString().split('T')[0],
+      animals: []
+    };
+    
+    openEditor(newLocation);
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -196,8 +248,17 @@ interface MapLocation {
           >
             Liste Görünümü
           </Button>
-          <Button>
-            <Plus className="h-4 w-4" />
+          {viewMode === 'map' && (
+            <Button
+              variant={isEditMode ? 'default' : 'outline'}
+              onClick={() => setIsEditMode(!isEditMode)}
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              {isEditMode ? 'Düz. Modu' : 'Düzenle'}
+            </Button>
+          )}
+          <Button onClick={() => openEditor()}>
+            <Plus className="h-4 w-4 mr-1" />
             Konum Ekle
           </Button>
         </div>
@@ -274,7 +335,20 @@ interface MapLocation {
             </CardHeader>
             <CardContent>
               {viewMode === 'map' ? (
-                <div className="relative bg-slate-900 rounded-lg overflow-hidden border-2 border-slate-600" style={{ height: '600px' }}>
+                <div 
+                  ref={mapRef}
+                  className={`relative bg-slate-900 rounded-lg overflow-hidden border-2 border-slate-600 ${
+                    isEditMode ? 'cursor-crosshair' : ''
+                  }`} 
+                  style={{ height: '600px' }}
+                  onClick={handleMapClick}
+                >
+                  {/* Edit Mode Indicator */}
+                  {isEditMode && (
+                    <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-mono z-20">
+                      DÜZENLEME MODU - Tıklayarak konum ekleyin
+                    </div>
+                  )}
                   {/* Blueprint Grid Background */}
                   <div className="absolute inset-0">
                     {/* Major grid lines */}
@@ -299,18 +373,29 @@ interface MapLocation {
                   
                   {/* Location Buildings/Areas */}
                   {locations.map((location) => (
-                    <div
-                      key={location.id}
-                      className="absolute cursor-pointer group transition-all duration-200 hover:scale-105"
-                      style={{
-                        left: `${location.coordinates.x}%`,
-                        top: `${location.coordinates.y}%`,
-                        width: `${location.size.width}px`,
-                        height: `${location.size.height}px`,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                      onClick={() => setSelectedLocation(location)}
-                    >
+                     <div
+                       key={location.id}
+                       className={`absolute group transition-all duration-200 hover:scale-105 ${
+                         isEditMode ? 'cursor-move' : 'cursor-pointer'
+                       }`}
+                       style={{
+                         left: `${location.coordinates.x}%`,
+                         top: `${location.coordinates.y}%`,
+                         width: `${location.size.width}px`,
+                         height: `${location.size.height}px`,
+                         transform: 'translate(-50%, -50%)'
+                       }}
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         setSelectedLocation(location);
+                       }}
+                       onDoubleClick={(e) => {
+                         e.stopPropagation();
+                         if (isEditMode) {
+                           openEditor(location);
+                         }
+                       }}
+                     >
                       {/* Building Rectangle */}
                       <div className={`
                         w-full h-full border-2 border-slate-300 bg-slate-800/80 rounded-sm
@@ -560,14 +645,14 @@ interface MapLocation {
                      </div>
                    </div>
                   
-                  <div className="flex gap-2 pt-4">
-                    <Button size="sm" className="w-full">
-                      Düzenle
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full">
-                      Konum Geçmişi
-                    </Button>
-                  </div>
+                   <div className="flex gap-2 pt-4">
+                     <Button size="sm" className="w-full" onClick={() => openEditor(selectedLocation)}>
+                       Düzenle
+                     </Button>
+                     <Button variant="outline" size="sm" className="w-full">
+                       Konum Geçmişi
+                     </Button>
+                   </div>
                 </div>
               ) : (
                 <div className="text-center text-muted-foreground py-8">
@@ -579,6 +664,15 @@ interface MapLocation {
           </Card>
         </div>
       </div>
+
+      {/* Location Editor Dialog */}
+      <FarmLocationEditor
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        location={editingLocation}
+        onSave={handleSaveLocation}
+        onDelete={handleDeleteLocation}
+      />
     </div>
   );
 };
