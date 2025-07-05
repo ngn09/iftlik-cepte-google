@@ -35,9 +35,15 @@ interface MapLocation {
     const [isEditMode, setIsEditMode] = useState(false);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [editingLocation, setEditingLocation] = useState<MapLocation | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-    const mapRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [draggedLocation, setDraggedLocation] = useState<string | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null);
+  const [resizedLocation, setResizedLocation] = useState<string | null>(null);
+  const [originalSize, setOriginalSize] = useState({ width: 0, height: 0 });
+  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const mapRef = useRef<HTMLDivElement>(null);
 
   // Sample farm locations - in real app this would come from database
   const [locations, setLocations] = useState<MapLocation[]>([
@@ -209,7 +215,7 @@ interface MapLocation {
   };
 
   const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isEditMode || !mapRef.current) return;
+    if (!isEditMode || !mapRef.current || isDragging || isResizing) return;
     
     const rect = mapRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -229,6 +235,105 @@ interface MapLocation {
     };
     
     openEditor(newLocation);
+  };
+
+  // Drag and resize handlers
+  const handleMouseDown = (e: React.MouseEvent, locationId: string, type: 'drag' | 'resize', handle?: string) => {
+    if (!isEditMode) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (type === 'drag') {
+      setIsDragging(true);
+      setDraggedLocation(locationId);
+      const rect = mapRef.current?.getBoundingClientRect();
+      if (rect) {
+        setDragOffset({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        });
+      }
+    } else if (type === 'resize') {
+      setIsResizing(true);
+      setResizedLocation(locationId);
+      setResizeHandle(handle || '');
+      const location = locations.find(l => l.id === locationId);
+      if (location) {
+        setOriginalSize(location.size);
+        setStartPosition({ x: e.clientX, y: e.clientY });
+      }
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isEditMode || !mapRef.current) return;
+
+    if (isDragging && draggedLocation) {
+      const rect = mapRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+      setLocations(prev => prev.map(loc =>
+        loc.id === draggedLocation
+          ? { ...loc, coordinates: { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) } }
+          : loc
+      ));
+    } else if (isResizing && resizedLocation && resizeHandle) {
+      const deltaX = e.clientX - startPosition.x;
+      const deltaY = e.clientY - startPosition.y;
+      
+      setLocations(prev => prev.map(loc => {
+        if (loc.id === resizedLocation) {
+          let newWidth = originalSize.width;
+          let newHeight = originalSize.height;
+          
+          switch (resizeHandle) {
+            case 'se':
+              newWidth = Math.max(30, originalSize.width + deltaX);
+              newHeight = Math.max(20, originalSize.height + deltaY);
+              break;
+            case 'sw':
+              newWidth = Math.max(30, originalSize.width - deltaX);
+              newHeight = Math.max(20, originalSize.height + deltaY);
+              break;
+            case 'ne':
+              newWidth = Math.max(30, originalSize.width + deltaX);
+              newHeight = Math.max(20, originalSize.height - deltaY);
+              break;
+            case 'nw':
+              newWidth = Math.max(30, originalSize.width - deltaX);
+              newHeight = Math.max(20, originalSize.height - deltaY);
+              break;
+            case 'e':
+              newWidth = Math.max(30, originalSize.width + deltaX);
+              break;
+            case 'w':
+              newWidth = Math.max(30, originalSize.width - deltaX);
+              break;
+            case 'n':
+              newHeight = Math.max(20, originalSize.height - deltaY);
+              break;
+            case 's':
+              newHeight = Math.max(20, originalSize.height + deltaY);
+              break;
+          }
+          
+          return { ...loc, size: { width: newWidth, height: newHeight } };
+        }
+        return loc;
+      }));
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging || isResizing) {
+      setIsDragging(false);
+      setIsResizing(false);
+      setDraggedLocation(null);
+      setResizedLocation(null);
+      setResizeHandle(null);
+    }
   };
 
   return (
@@ -342,6 +447,9 @@ interface MapLocation {
                   }`} 
                   style={{ height: '600px' }}
                   onClick={handleMapClick}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
                 >
                   {/* Edit Mode Indicator */}
                   {isEditMode && (
@@ -371,102 +479,161 @@ interface MapLocation {
                     </div>
                   </div>
                   
-                  {/* Location Buildings/Areas */}
-                  {locations.map((location) => (
-                     <div
-                       key={location.id}
-                       className={`absolute group transition-all duration-200 hover:scale-105 ${
-                         isEditMode ? 'cursor-move' : 'cursor-pointer'
-                       }`}
-                       style={{
-                         left: `${location.coordinates.x}%`,
-                         top: `${location.coordinates.y}%`,
-                         width: `${location.size.width}px`,
-                         height: `${location.size.height}px`,
-                         transform: 'translate(-50%, -50%)'
-                       }}
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         setSelectedLocation(location);
-                       }}
-                       onDoubleClick={(e) => {
-                         e.stopPropagation();
-                         if (isEditMode) {
-                           openEditor(location);
-                         }
-                       }}
-                     >
-                      {/* Building Rectangle */}
-                      <div className={`
-                        w-full h-full border-2 border-slate-300 bg-slate-800/80 rounded-sm
-                        ${selectedLocation?.id === location.id ? 'border-blue-400 bg-blue-900/40' : ''}
-                        ${location.type === 'Ahır' ? 'border-blue-400' : ''}
-                        ${location.type === 'Padok' ? 'border-green-400' : ''}
-                        ${location.type === 'Yem Deposu' ? 'border-yellow-400' : ''}
-                        ${location.type === 'Su Deposu' ? 'border-cyan-400' : ''}
-                        ${location.type === 'Mera' ? 'border-emerald-400 bg-emerald-900/20' : ''}
-                        relative overflow-hidden
-                      `}>
-                        {/* Location Name */}
-                        <div className="absolute top-1 left-1 text-xs text-slate-200 font-mono">
-                          {location.name}
-                        </div>
-                        
-                        {/* Type Badge */}
-                        <div className="absolute top-1 right-1">
-                          <Badge variant="secondary" className="text-xs h-5">
-                            {location.type}
-                          </Badge>
-                        </div>
-                        
-                        {/* Animal Information */}
-                        {location.animals && location.animals.length > 0 && (
-                          <div className="absolute bottom-1 left-1 right-1 space-y-1">
-                            {location.animals.map((animal, idx) => (
-                              <div key={idx} className="flex items-center justify-between text-xs text-slate-300 bg-slate-700/80 px-1 py-0.5 rounded">
-                                <div className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  <span>{animal.breed}</span>
-                                </div>
-                                <Badge variant="outline" className="text-xs h-4 text-slate-300 border-slate-500">
-                                  {animal.count}
-                                </Badge>
-                              </div>
-                            ))}
-                            {location.animals[0]?.feedType && (
-                              <div className="flex items-center gap-1 text-xs text-slate-400">
-                                <Wheat className="h-3 w-3" />
-                                <span className="truncate">{location.animals[0].feedType}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Capacity Info for Non-Animal Locations */}
-                        {!location.animals && location.capacity && (
-                          <div className="absolute bottom-1 left-1 right-1">
-                            <div className="text-xs text-slate-300 bg-slate-700/80 px-1 py-0.5 rounded flex justify-between">
-                              <span>Kapasite</span>
-                              <span>{getOccupancyPercentage(location)}%</span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Status Indicator */}
-                        <div className={`
-                          absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-slate-900
-                          ${location.status === 'Aktif' ? 'bg-green-400' : ''}
-                          ${location.status === 'Bakımda' ? 'bg-yellow-400' : ''}
-                          ${location.status === 'Kapalı' ? 'bg-red-400' : ''}
-                        `} />
-                      </div>
-                      
-                      {/* Hover Info Tooltip */}
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-slate-200 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-slate-600 z-10">
-                        {location.description}
-                      </div>
-                    </div>
-                  ))}
+                   {/* Location Buildings/Areas */}
+                   {locations.map((location) => (
+                      <div
+                        key={location.id}
+                        className={`absolute group transition-all duration-200 hover:scale-105 ${
+                          isEditMode ? 'cursor-move' : 'cursor-pointer'
+                        }`}
+                        style={{
+                          left: `${location.coordinates.x}%`,
+                          top: `${location.coordinates.y}%`,
+                          width: `${location.size.width}px`,
+                          height: `${location.size.height}px`,
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedLocation(location);
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          if (isEditMode) {
+                            openEditor(location);
+                          }
+                        }}
+                        onMouseDown={(e) => handleMouseDown(e, location.id, 'drag')}
+                      >
+                       {/* Building Rectangle */}
+                       <div className={`
+                         w-full h-full border-2 border-slate-300 bg-slate-800/80 rounded-sm
+                         ${selectedLocation?.id === location.id ? 'border-blue-400 bg-blue-900/40' : ''}
+                         ${location.type === 'Ahır' ? 'border-blue-400' : ''}
+                         ${location.type === 'Padok' ? 'border-green-400' : ''}
+                         ${location.type === 'Yem Deposu' ? 'border-yellow-400' : ''}
+                         ${location.type === 'Su Deposu' ? 'border-cyan-400' : ''}
+                         ${location.type === 'Mera' ? 'border-emerald-400 bg-emerald-900/20' : ''}
+                         relative overflow-hidden
+                       `}>
+                         {/* Location Name */}
+                         <div className="absolute top-1 left-1 text-xs text-slate-200 font-mono">
+                           {location.name}
+                         </div>
+                         
+                         {/* Type Badge */}
+                         <div className="absolute top-1 right-1">
+                           <Badge variant="secondary" className="text-xs h-5">
+                             {location.type}
+                           </Badge>
+                         </div>
+                         
+                         {/* Quick Edit Button - only in edit mode */}
+                         {isEditMode && (
+                           <div className="absolute top-1 left-1/2 transform -translate-x-1/2">
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               className="h-5 px-1 text-xs bg-slate-700/90 border-slate-500 text-slate-200 hover:bg-slate-600"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 openEditor(location);
+                               }}
+                             >
+                               <Edit className="h-3 w-3" />
+                             </Button>
+                           </div>
+                         )}
+                         
+                         {/* Animal Information */}
+                         {location.animals && location.animals.length > 0 && (
+                           <div className="absolute bottom-1 left-1 right-1 space-y-1">
+                             {location.animals.map((animal, idx) => (
+                               <div key={idx} className="flex items-center justify-between text-xs text-slate-300 bg-slate-700/80 px-1 py-0.5 rounded">
+                                 <div className="flex items-center gap-1">
+                                   <Users className="h-3 w-3" />
+                                   <span>{animal.breed}</span>
+                                 </div>
+                                 <Badge variant="outline" className="text-xs h-4 text-slate-300 border-slate-500">
+                                   {animal.count}
+                                 </Badge>
+                               </div>
+                             ))}
+                             {location.animals[0]?.feedType && (
+                               <div className="flex items-center gap-1 text-xs text-slate-400">
+                                 <Wheat className="h-3 w-3" />
+                                 <span className="truncate">{location.animals[0].feedType}</span>
+                               </div>
+                             )}
+                           </div>
+                         )}
+                         
+                         {/* Capacity Info for Non-Animal Locations */}
+                         {!location.animals && location.capacity && (
+                           <div className="absolute bottom-1 left-1 right-1">
+                             <div className="text-xs text-slate-300 bg-slate-700/80 px-1 py-0.5 rounded flex justify-between">
+                               <span>Kapasite</span>
+                               <span>{getOccupancyPercentage(location)}%</span>
+                             </div>
+                           </div>
+                         )}
+                         
+                         {/* Status Indicator */}
+                         <div className={`
+                           absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-slate-900
+                           ${location.status === 'Aktif' ? 'bg-green-400' : ''}
+                           ${location.status === 'Bakımda' ? 'bg-yellow-400' : ''}
+                           ${location.status === 'Kapalı' ? 'bg-red-400' : ''}
+                         `} />
+                         
+                         {/* Resize Handles - only in edit mode */}
+                         {isEditMode && selectedLocation?.id === location.id && (
+                           <>
+                             {/* Corner handles */}
+                             <div 
+                               className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border-2 border-white rounded-full cursor-nw-resize hover:bg-blue-600"
+                               onMouseDown={(e) => handleMouseDown(e, location.id, 'resize', 'nw')}
+                             />
+                             <div 
+                               className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-white rounded-full cursor-ne-resize hover:bg-blue-600"
+                               onMouseDown={(e) => handleMouseDown(e, location.id, 'resize', 'ne')}
+                             />
+                             <div 
+                               className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 border-2 border-white rounded-full cursor-sw-resize hover:bg-blue-600"
+                               onMouseDown={(e) => handleMouseDown(e, location.id, 'resize', 'sw')}
+                             />
+                             <div 
+                               className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-white rounded-full cursor-se-resize hover:bg-blue-600"
+                               onMouseDown={(e) => handleMouseDown(e, location.id, 'resize', 'se')}
+                             />
+                             
+                             {/* Edge handles */}
+                             <div 
+                               className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-blue-500 border border-white rounded cursor-n-resize hover:bg-blue-600"
+                               onMouseDown={(e) => handleMouseDown(e, location.id, 'resize', 'n')}
+                             />
+                             <div 
+                               className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-blue-500 border border-white rounded cursor-s-resize hover:bg-blue-600"
+                               onMouseDown={(e) => handleMouseDown(e, location.id, 'resize', 's')}
+                             />
+                             <div 
+                               className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-3 bg-blue-500 border border-white rounded cursor-w-resize hover:bg-blue-600"
+                               onMouseDown={(e) => handleMouseDown(e, location.id, 'resize', 'w')}
+                             />
+                             <div 
+                               className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-3 bg-blue-500 border border-white rounded cursor-e-resize hover:bg-blue-600"
+                               onMouseDown={(e) => handleMouseDown(e, location.id, 'resize', 'e')}
+                             />
+                           </>
+                         )}
+                       </div>
+                       
+                       {/* Hover Info Tooltip */}
+                       <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-slate-200 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-slate-600 z-10">
+                         {location.description}
+                       </div>
+                     </div>
+                   ))}
                   
                   {/* Blueprint Title */}
                   <div className="absolute bottom-4 left-4 text-slate-300">
