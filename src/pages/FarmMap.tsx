@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,89 @@ interface MapLocation {
   const [originalSize, setOriginalSize] = useState({ width: 0, height: 0 });
   const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
+
+  // Global mouse event listeners for drag and resize
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isEditMode || !mapRef.current) return;
+
+      if (isDragging && draggedLocation) {
+        const rect = mapRef.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+        setLocations(prev => prev.map(loc =>
+          loc.id === draggedLocation
+            ? { ...loc, coordinates: { x: Math.max(0, Math.min(95, x)), y: Math.max(0, Math.min(95, y)) } }
+            : loc
+        ));
+      } else if (isResizing && resizedLocation && resizeHandle) {
+        const deltaX = e.clientX - startPosition.x;
+        const deltaY = e.clientY - startPosition.y;
+        
+        setLocations(prev => prev.map(loc => {
+          if (loc.id === resizedLocation) {
+            let newWidth = originalSize.width;
+            let newHeight = originalSize.height;
+            
+            switch (resizeHandle) {
+              case 'se':
+                newWidth = Math.max(40, originalSize.width + deltaX);
+                newHeight = Math.max(30, originalSize.height + deltaY);
+                break;
+              case 'sw':
+                newWidth = Math.max(40, originalSize.width - deltaX);
+                newHeight = Math.max(30, originalSize.height + deltaY);
+                break;
+              case 'ne':
+                newWidth = Math.max(40, originalSize.width + deltaX);
+                newHeight = Math.max(30, originalSize.height - deltaY);
+                break;
+              case 'nw':
+                newWidth = Math.max(40, originalSize.width - deltaX);
+                newHeight = Math.max(30, originalSize.height - deltaY);
+                break;
+              case 'e':
+                newWidth = Math.max(40, originalSize.width + deltaX);
+                break;
+              case 'w':
+                newWidth = Math.max(40, originalSize.width - deltaX);
+                break;
+              case 'n':
+                newHeight = Math.max(30, originalSize.height - deltaY);
+                break;
+              case 's':
+                newHeight = Math.max(30, originalSize.height + deltaY);
+                break;
+            }
+            
+            return { ...loc, size: { width: newWidth, height: newHeight } };
+          }
+          return loc;
+        }));
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (isDragging || isResizing) {
+        setIsDragging(false);
+        setIsResizing(false);
+        setDraggedLocation(null);
+        setResizedLocation(null);
+        setResizeHandle(null);
+      }
+    };
+
+    if (isDragging || isResizing) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, isResizing, draggedLocation, resizedLocation, resizeHandle, startPosition, originalSize, isEditMode]);
 
   // Sample farm locations - in real app this would come from database
   const [locations, setLocations] = useState<MapLocation[]>([
@@ -247,13 +330,7 @@ interface MapLocation {
     if (type === 'drag') {
       setIsDragging(true);
       setDraggedLocation(locationId);
-      const rect = mapRef.current?.getBoundingClientRect();
-      if (rect) {
-        setDragOffset({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top
-        });
-      }
+      setSelectedLocation(locations.find(l => l.id === locationId) || null);
     } else if (type === 'resize') {
       setIsResizing(true);
       setResizedLocation(locationId);
@@ -262,77 +339,8 @@ interface MapLocation {
       if (location) {
         setOriginalSize(location.size);
         setStartPosition({ x: e.clientX, y: e.clientY });
+        setSelectedLocation(location);
       }
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isEditMode || !mapRef.current) return;
-
-    if (isDragging && draggedLocation) {
-      const rect = mapRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-      setLocations(prev => prev.map(loc =>
-        loc.id === draggedLocation
-          ? { ...loc, coordinates: { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) } }
-          : loc
-      ));
-    } else if (isResizing && resizedLocation && resizeHandle) {
-      const deltaX = e.clientX - startPosition.x;
-      const deltaY = e.clientY - startPosition.y;
-      
-      setLocations(prev => prev.map(loc => {
-        if (loc.id === resizedLocation) {
-          let newWidth = originalSize.width;
-          let newHeight = originalSize.height;
-          
-          switch (resizeHandle) {
-            case 'se':
-              newWidth = Math.max(30, originalSize.width + deltaX);
-              newHeight = Math.max(20, originalSize.height + deltaY);
-              break;
-            case 'sw':
-              newWidth = Math.max(30, originalSize.width - deltaX);
-              newHeight = Math.max(20, originalSize.height + deltaY);
-              break;
-            case 'ne':
-              newWidth = Math.max(30, originalSize.width + deltaX);
-              newHeight = Math.max(20, originalSize.height - deltaY);
-              break;
-            case 'nw':
-              newWidth = Math.max(30, originalSize.width - deltaX);
-              newHeight = Math.max(20, originalSize.height - deltaY);
-              break;
-            case 'e':
-              newWidth = Math.max(30, originalSize.width + deltaX);
-              break;
-            case 'w':
-              newWidth = Math.max(30, originalSize.width - deltaX);
-              break;
-            case 'n':
-              newHeight = Math.max(20, originalSize.height - deltaY);
-              break;
-            case 's':
-              newHeight = Math.max(20, originalSize.height + deltaY);
-              break;
-          }
-          
-          return { ...loc, size: { width: newWidth, height: newHeight } };
-        }
-        return loc;
-      }));
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (isDragging || isResizing) {
-      setIsDragging(false);
-      setIsResizing(false);
-      setDraggedLocation(null);
-      setResizedLocation(null);
-      setResizeHandle(null);
     }
   };
 
@@ -447,9 +455,6 @@ interface MapLocation {
                   }`} 
                   style={{ height: '600px' }}
                   onClick={handleMapClick}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
                 >
                   {/* Edit Mode Indicator */}
                   {isEditMode && (
