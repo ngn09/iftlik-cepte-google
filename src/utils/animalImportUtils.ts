@@ -75,11 +75,25 @@ export const validateAnimalData = (data: any[]): { valid: AnimalImportData[], er
         formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
       }
     }
-    // DD/MM/YYYY formatını kontrol et
+    // M/D/YY ve MM/DD/YY formatlarını kontrol et (Amerikan formatı)
     else if (formattedDate.includes('/')) {
       const parts = formattedDate.split('/');
-      if (parts.length === 3 && parts[0].length <= 2 && parts[1].length <= 2 && parts[2].length === 4) {
-        formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      if (parts.length === 3) {
+        let month = parts[0];
+        let day = parts[1];
+        let year = parts[2];
+        
+        // 2 haneli yılı 4 haneye çevir
+        if (year.length === 2) {
+          const yearNum = parseInt(year);
+          year = yearNum > 50 ? `19${year}` : `20${year}`;
+        }
+        
+        // Ay ve gün değerlerini 2 haneye tamamla
+        month = month.padStart(2, '0');
+        day = day.padStart(2, '0');
+        
+        formattedDate = `${year}-${month}-${day}`;
       }
     }
 
