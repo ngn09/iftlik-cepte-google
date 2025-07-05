@@ -204,171 +204,119 @@ export const processPDFFile = async (file: File): Promise<{ data: any[], documen
       throw new Error('PDF dosyasından metin çıkarılamadı veya dosya boş görünüyor');
     }
     
-    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    console.log('Toplam satır sayısı:', lines.length);
-    
-    // İlk 20 satırı logla
-    console.log('İlk 20 satır:', lines.slice(0, 20));
+    // Satır bazlı ayrıştırma yerine tablo yapısını daha akıllıca bul
+    const allText = text.replace(/\s+/g, ' ').trim();
+    console.log('Temizlenmiş metin:', allText.substring(0, 1000));
     
     // Belge bilgilerini çıkar
-    const institutionLine = lines.find(line => 
-      line.includes('Tarım') || 
-      line.includes('Bakanlık') || 
-      line.includes('Müdürlük') ||
-      line.includes('Veteriner') ||
-      line.includes('İl Müdürlüğü')
-    );
-    
-    const farmLine = lines.find(line => 
-      (line.includes('İşletme') || line.includes('Çiftlik')) && 
-      (line.includes('Adı') || line.includes('Bilgi') || line.includes(':') || line.includes('Ad'))
-    );
+    const institutionMatch = allText.match(/(T\.C\.|Türkiye Cumhuriyeti|Tarım|Bakanlık|İl Müdürlüğü|Veteriner)/i);
+    const farmMatch = allText.match(/(İşletme|Çiftlik).{0,50}(Adı|Ad|:|Name)/i);
 
     const documentInfo: DocumentInfo = {
-      institution: institutionLine,
-      farmInfo: farmLine,
+      institution: institutionMatch ? institutionMatch[0] : undefined,
+      farmInfo: farmMatch ? farmMatch[0] : undefined,
       date: new Date().toLocaleDateString('tr-TR')
     };
 
     console.log('Belge bilgileri:', documentInfo);
 
-    // Hayvan listesi bölümünü bul - daha geniş arama
-    const sectionPatterns = [
-      'İŞLETMEDEKİ MEVCUT HAYVANLAR',
-      'MEVCUT HAYVANLAR',
-      'HAYVAN LİSTESİ',
-      'HAYVAN KAYITLARI',
-      'Küpe No',
-      'KÜPE NO',
-      'Hayvan Bilgileri',
-      'HAYVAN BİLGİLERİ',
-      'Tablo', // Genel tablo başlığı
-      'Liste' // Genel liste başlığı
-    ];
-    
-    let startIndex = -1;
-    let foundPattern = '';
-    
-    for (const pattern of sectionPatterns) {
-      startIndex = lines.findIndex(line => 
-        line.toUpperCase().includes(pattern.toUpperCase()) ||
-        line.toUpperCase().replace(/[İI]/g, 'I').includes(pattern.toUpperCase().replace(/[İI]/g, 'I'))
-      );
-      if (startIndex !== -1) {
-        foundPattern = pattern;
-        console.log(`"${pattern}" bölümü ${startIndex}. satırda bulundu:`, lines[startIndex]);
-        break;
-      }
-    }
-
-    // Eğer özel bölüm başlığı bulunamazsa, küpe numarası içeren satırları ara
-    if (startIndex === -1) {
-      console.log('Özel bölüm başlığı bulunamadı, küpe numarası araniyor...');
-      startIndex = lines.findIndex(line => 
-        /TR\d{12}/.test(line) || // Türkiye küpe numarası formatı
-        line.includes('TR') && line.length > 10 ||
-        /\d{10,}/.test(line) // Uzun sayı dizileri
-      );
-      
-      if (startIndex !== -1) {
-        console.log(`Küpe numarası ${startIndex}. satırda bulundu:`, lines[startIndex]);
-        startIndex = Math.max(0, startIndex - 2); // Başlık için birkaç satır geri git
-      }
-    }
-
-    if (startIndex === -1) {
-      // Son çare: "TR" içeren herhangi bir satır ara
-      startIndex = lines.findIndex(line => line.includes('TR'));
-      if (startIndex !== -1) {
-        console.log(`TR içeren satır ${startIndex}. satırda bulundu:`, lines[startIndex]);
-        startIndex = Math.max(0, startIndex - 1);
-      }
-    }
-
-    if (startIndex === -1) {
-      console.log('Mevcut satırlar (ilk 50):', lines.slice(0, 50));
-      throw new Error('PDF\'de hayvan verisi bulunamadı. Lütfen belgenin Türkiye Cumhuriyeti Tarım ve Orman Bakanlığı formatında olduğundan emin olun.');
-    }
-
     const data = [];
-    let processedRows = 0;
     
-    // Tablo verilerini işle - startIndex'ten itibaren
-    for (let i = startIndex; i < lines.length && processedRows < 200; i++) {
-      const line = lines[i].trim();
+    // TR ile başlayan küpe numaralarını ve çevresindeki veriyi bul
+    const kupePattern = /TR\d{12}/g;
+    let match;
+    let kupeNos = [];
+    
+    while ((match = kupePattern.exec(allText)) !== null) {
+      kupeNos.push({
+        kupeNo: match[0],
+        index: match.index,
+        contextStart: Math.max(0, match.index - 100),
+        contextEnd: Math.min(allText.length, match.index + 200)
+      });
+    }
+    
+    console.log(`${kupeNos.length} küpe numarası bulundu:`, kupeNos.map(k => k.kupeNo));
+    
+    for (const kupeInfo of kupeNos) {
+      const context = allText.substring(kupeInfo.contextStart, kupeInfo.contextEnd);
+      console.log(`${kupeInfo.kupeNo} için kontekst:`, context);
       
-      if (!line || line.length < 5) continue;
+      // Her küpe numarasının çevresindeki bilgileri parse et
+      const contextParts = context.split(/\s+/).filter(part => part.length > 0);
+      const kupeIndex = contextParts.findIndex(part => part === kupeInfo.kupeNo);
       
-      // Sayfa sonu, imza, toplam gibi bölümleri atla
-      if (line.includes('Sayfa') || 
-          line.includes('Toplam') ||
-          line.includes('İMZA') ||
-          line.includes('Tarih') ||
-          line.includes('Müdür') ||
-          line.toUpperCase().includes('TOPLAM')) {
-        continue;
-      }
-      
-      console.log(`${i}. satır kontrol ediliyor:`, line);
-      
-      // Türkiye küpe numarası formatını ara (TR ile başlayan 14 haneli)
-      const kupeNoMatch = line.match(/TR\d{12}/);
-      if (kupeNoMatch) {
-        const kupeNo = kupeNoMatch[0];
-        console.log('Küpe numarası bulundu:', kupeNo);
+      if (kupeIndex !== -1) {
+        // Küpe numarasından sonraki parçaları incele
+        const afterKupe = contextParts.slice(kupeIndex + 1, kupeIndex + 10);
+        console.log(`${kupeInfo.kupeNo} sonrası parçalar:`, afterKupe);
         
-        // Satırın geri kalanını parse et
-        const remainingText = line.replace(kupeNo, '').trim();
-        const parts = remainingText.split(/\s+/).filter(part => part.length > 0);
+        let breed = 'Belirsiz';
+        let gender = 'Erkek';
+        let birthDate = '2024-01-01';
         
-        console.log('Küpe numarası sonrası kısım:', parts);
+        // Irk bilgisini bul (Holstein-SA, Simmental vb.)
+        const breedPart = afterKupe.find(part => 
+          part.includes('Holstein') || 
+          part.includes('Simmental') || 
+          part.includes('Jersey') ||
+          part.includes('Montofon') ||
+          part.includes('-SA') ||
+          part.includes('-DA') ||
+          part.length > 3 && !part.match(/^\d/) && !['ERKEK', 'DİŞİ', 'DIŞI'].includes(part.toUpperCase())
+        );
         
-        if (parts.length >= 2) {
-          // İlk anlamlı kelime irk olabilir
-          let breed = parts[0];
-          let gender = 'ERKEK'; // Varsayılan
-          let birthDate = '2024-01-01'; // Varsayılan
-          
-          // Cinsiyet bilgisini ara
-          const genderPart = parts.find(part => 
-            part.toUpperCase().includes('ERKEK') || 
-            part.toUpperCase().includes('DİŞİ') ||
-            part.toUpperCase().includes('DIŞI') ||
-            part.toUpperCase() === 'E' ||
-            part.toUpperCase() === 'D'
-          );
-          
-          if (genderPart) {
-            gender = genderPart.toUpperCase().includes('DİŞİ') || 
-                    genderPart.toUpperCase().includes('DIŞI') || 
-                    genderPart.toUpperCase() === 'D' ? 'DİŞİ' : 'ERKEK';
-          }
-          
-          // Tarih formatını ara (DD.MM.YYYY)
-          const datePart = parts.find(part => /\d{1,2}\.\d{1,2}\.\d{4}/.test(part));
-          if (datePart) {
-            birthDate = datePart;
-          }
-          
-          const animalData = {
-            id: kupeNo,
-            breed: breed || 'Belirsiz',
-            gender: gender,
-            date_of_birth: birthDate
-          };
-          
-          console.log('Hayvan verisi ekleniyor:', animalData);
-          data.push(animalData);
-          processedRows++;
+        if (breedPart) {
+          breed = breedPart;
         }
+        
+        // Cinsiyet bilgisini bul
+        const genderPart = afterKupe.find(part => 
+          part.toUpperCase() === 'ERKEK' || 
+          part.toUpperCase() === 'DİŞİ' ||
+          part.toUpperCase() === 'DIŞI'
+        );
+        
+        if (genderPart) {
+          gender = genderPart.toUpperCase().includes('DİŞİ') || 
+                  genderPart.toUpperCase().includes('DIŞI') ? 'Dişi' : 'Erkek';
+        }
+        
+        // Tarih bilgisini bul (DD.MM.YY veya DD.MM.YYYY formatında)
+        const datePart = afterKupe.find(part => 
+          /\d{1,2}\.\d{1,2}\.\d{2,4}/.test(part)
+        );
+        
+        if (datePart) {
+          const parts = datePart.split('.');
+          if (parts.length === 3) {
+            let year = parts[2];
+            // 2 haneli yılı 4 haneye çevir
+            if (year.length === 2) {
+              const yearNum = parseInt(year);
+              year = yearNum > 50 ? `19${year}` : `20${year}`;
+            }
+            birthDate = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          }
+        }
+        
+        const animalData = {
+          id: kupeInfo.kupeNo,
+          breed: breed,
+          gender: gender,
+          date_of_birth: birthDate
+        };
+        
+        console.log('Hayvan verisi ekleniyor:', animalData);
+        data.push(animalData);
       }
     }
     
     console.log(`PDF'den toplam ${data.length} hayvan verisi çıkarıldı`);
     
     if (data.length === 0) {
-      console.log('Veri bulunamadı. PDF içeriğinin tamamı:', text);
-      throw new Error('PDF\'den hayvan verisi çıkarılamadı. Belge formatını kontrol edin veya daha açık/okunabilir bir PDF kullanın.');
+      console.log('Veri bulunamadı. Tüm metin içeriği:', allText);
+      throw new Error('PDF\'den hayvan verisi çıkarılamadı. Lütfen Excel şablonunu kullanmayı deneyin.');
     }
 
     return { data, documentInfo };
@@ -378,33 +326,112 @@ export const processPDFFile = async (file: File): Promise<{ data: any[], documen
   }
 };
 
+// Excel şablonu oluşturma fonksiyonu
+export const createAnimalImportTemplate = () => {
+  try {
+    const templateData = [
+      {
+        'Küpe No': 'TR100001234567',
+        'Irk': 'Holstein-SA',
+        'Cinsiyet': 'Erkek',
+        'Doğum Tarihi': '15.05.2020'
+      },
+      {
+        'Küpe No': 'TR100001234568',
+        'Irk': 'Simmental',
+        'Cinsiyet': 'Dişi', 
+        'Doğum Tarihi': '22.08.2019'
+      },
+      {
+        'Küpe No': 'TR100001234569',
+        'Irk': 'Jersey',
+        'Cinsiyet': 'Dişi',
+        'Doğum Tarihi': '10.12.2021'
+      }
+    ];
+
+    // Yeni çalışma kitabı oluştur
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    
+    // Kolon genişliklerini ayarla
+    const colWidths = [
+      { wch: 20 }, // Küpe No
+      { wch: 15 }, // Irk
+      { wch: 12 }, // Cinsiyet
+      { wch: 15 }  // Doğum Tarihi
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Çalışma sayfasını ekle
+    XLSX.utils.book_append_sheet(wb, ws, 'Hayvan Şablonu');
+    
+    // Dosyayı indir
+    const fileName = `hayvan_import_sablonu_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    console.log('Excel şablonu oluşturuldu:', fileName);
+    return true;
+  } catch (error) {
+    console.error('Şablon oluşturma hatası:', error);
+    throw new Error('Excel şablonu oluşturulamadı');
+  }
+};
+
 // Gelişmiş PDF metin çıkarma fonksiyonu
 const extractTextFromPDF = async (arrayBuffer: ArrayBuffer): Promise<string> => {
   try {
     const uint8Array = new Uint8Array(arrayBuffer);
     let text = '';
     
-    // PDF içeriğini string olarak decode et
-    const pdfString = new TextDecoder('latin1').decode(uint8Array);
+    // PDF içeriğini farklı encoding'lerle dene
+    const encodings = ['utf-8', 'latin1', 'windows-1254'];
+    let bestText = '';
+    let maxLength = 0;
     
-    // Metin objelerini bul ve çıkar
-    const patterns = [
-      /\((.*?)\)\s*Tj/g,
-      /\[(.*?)\]\s*TJ/g,
-      /\((.*?)\)/g
-    ];
-    
-    for (const pattern of patterns) {
-      let match;
-      while ((match = pattern.exec(pdfString)) !== null) {
-        const textContent = match[1];
-        if (textContent && textContent.length > 1 && !/^[\x00-\x1F\x7F-\xFF]*$/.test(textContent)) {
-          text += textContent.replace(/\\n/g, '\n').replace(/\\r/g, '\r') + ' ';
+    for (const encoding of encodings) {
+      try {
+        const pdfString = new TextDecoder(encoding).decode(uint8Array);
+        
+        // Çeşitli PDF metin çıkarma desenleri
+        const patterns = [
+          /\((.*?)\)\s*Tj/g,
+          /\[(.*?)\]\s*TJ/g,
+          /\((.*?)\)\s*Tj/gi,
+          /BT\s*(.*?)\s*ET/gs,
+          /\(([\s\S]*?)\)/g
+        ];
+        
+        let extractedText = '';
+        for (const pattern of patterns) {
+          let match;
+          while ((match = pattern.exec(pdfString)) !== null) {
+            const textContent = match[1];
+            if (textContent && textContent.length > 0) {
+              // Özel karakterleri temizle ama Türkçe karakterleri koru
+              const cleanText = textContent
+                .replace(/\\n/g, '\n')
+                .replace(/\\r/g, '\r')
+                .replace(/\\t/g, '\t')
+                .replace(/\\\\/g, '\\');
+              extractedText += cleanText + ' ';
+            }
+          }
         }
+        
+        // Eğer bu encoding daha iyi sonuç verdiyse kaydet
+        if (extractedText.length > maxLength) {
+          maxLength = extractedText.length;
+          bestText = extractedText;
+        }
+      } catch (e) {
+        console.log(`${encoding} encoding başarısız:`, e);
       }
     }
     
-    // Türkçe karakterleri düzelt
+    text = bestText;
+    
+    // Türkçe karakter düzeltmeleri
     text = text
       .replace(/Ã¼/g, 'ü')
       .replace(/Ã¶/g, 'ö')
@@ -412,9 +439,28 @@ const extractTextFromPDF = async (arrayBuffer: ArrayBuffer): Promise<string> => 
       .replace(/Ä±/g, 'ı')
       .replace(/Å/g, 'ş')
       .replace(/Ä/g, 'ğ')
-      .replace(/Ã„/g, 'İ');
+      .replace(/Ã„/g, 'İ')
+      .replace(/Ã/g, 'İ')
+      .replace(/ÄŸ/g, 'ğ')
+      .replace(/Å\u009f/g, 'ş');
+    
+    // Eğer hala metin çıkaramadıysak, raw binary'den tablo verilerini ara
+    if (text.length < 100) {
+      const rawText = Array.from(uint8Array)
+        .map(byte => String.fromCharCode(byte))
+        .join('');
+      
+      // TR ile başlayan küpe numaralarını bul
+      const kupeMatches = rawText.match(/TR\d{12}/g);
+      if (kupeMatches && kupeMatches.length > 0) {
+        console.log('Raw binary\'den küpe numaraları bulundu:', kupeMatches.length);
+        // Bu durumda raw text'i kullan
+        text = rawText;
+      }
+    }
     
     console.log('Çıkarılan metin uzunluğu:', text.length);
+    console.log('İlk 500 karakter:', text.substring(0, 500));
     return text;
   } catch (error) {
     console.error('PDF metin çıkarma hatası:', error);
