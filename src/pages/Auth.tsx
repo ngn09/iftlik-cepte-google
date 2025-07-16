@@ -64,10 +64,23 @@ const Auth = () => {
         });
 
         if (error) {
+            let errorMessage = error.message;
+            
+            // Handle specific error cases
+            if (error.message.includes('upstream connect error') || error.message.includes('503')) {
+                errorMessage = 'Sunucu geçici olarak erişilemez. Lütfen birkaç dakika sonra tekrar deneyin.';
+            } else if (error.message.includes('User already registered')) {
+                errorMessage = 'Bu e-posta adresi zaten kayıtlı. Giriş yapmayı deneyin.';
+            } else if (error.message.includes('Invalid email')) {
+                errorMessage = 'Geçersiz e-posta adresi.';
+            } else if (error.message.includes('Password should be')) {
+                errorMessage = 'Şifre en az 6 karakter olmalıdır.';
+            }
+            
             toast({
                 variant: "destructive",
-                title: "Hata",
-                description: `Kayıt oluşturulamadı: ${error.message}`,
+                title: "Kayıt Hatası",
+                description: errorMessage,
             });
         } else {
             toast({
