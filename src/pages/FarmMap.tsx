@@ -670,6 +670,57 @@ const FarmMap = () => {
                     </div>
                   )}
                   
+                  {/* Konum Koordinatları */}
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+                      <Move className="h-4 w-4" />
+                      Konumlandırma
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-500 block mb-1">X Koordinatı (%)</label>
+                        <Input
+                          type="number"
+                          min="5"
+                          max="95"
+                          value={Math.round(selectedLocation.coordinates.x)}
+                          onChange={(e) => {
+                            const x = Math.max(5, Math.min(95, parseFloat(e.target.value) || 0));
+                            setLocations(prev => prev.map(loc =>
+                              loc.id === selectedLocation.id
+                                ? { ...loc, coordinates: { ...loc.coordinates, x } }
+                                : loc
+                            ));
+                            setSelectedLocation(prev => prev ? { ...prev, coordinates: { ...prev.coordinates, x } } : null);
+                          }}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 block mb-1">Y Koordinatı (%)</label>
+                        <Input
+                          type="number"
+                          min="5"
+                          max="95"
+                          value={Math.round(selectedLocation.coordinates.y)}
+                          onChange={(e) => {
+                            const y = Math.max(5, Math.min(95, parseFloat(e.target.value) || 0));
+                            setLocations(prev => prev.map(loc =>
+                              loc.id === selectedLocation.id
+                                ? { ...loc, coordinates: { ...loc.coordinates, y } }
+                                : loc
+                            ));
+                            setSelectedLocation(prev => prev ? { ...prev, coordinates: { ...prev.coordinates, y } } : null);
+                          }}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Konumu sürükleyerek de değiştirebilirsiniz (Düzenleme modunda)
+                    </p>
+                  </div>
+
                   {selectedLocation.capacity && (
                     <div>
                       <label className="text-sm font-semibold text-slate-700">Kapasite Durumu:</label>
