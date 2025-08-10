@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,8 +21,21 @@ import FeedStock from "./pages/FeedStock";
 import { AuthProvider, ProtectedRoute } from './auth';
 import Auth from './pages/Auth';
 import FarmSetup from './pages/FarmSetup';
+import { usePushNotifications } from "./hooks/usePushNotifications";
+import { useDeepLinks } from "./hooks/useDeepLinks";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24,
+      staleTime: 1000 * 30,
+      refetchOnReconnect: true,
+    },
+  },
+});
+
+const persister = createAsyncStoragePersister({ storage: localforage });
+persistQueryClient({ queryClient, persister, maxAge: 1000 * 60 * 60 * 24 });
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
