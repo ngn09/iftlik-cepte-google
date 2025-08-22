@@ -40,27 +40,29 @@ const queryClient = new QueryClient({
 const persister = createAsyncStoragePersister({ storage: mobileStorage });
 persistQueryClient({ queryClient, persister, maxAge: 1000 * 60 * 60 * 24 });
 
-const App = () => {
-  // Initialize mobile features
+const MobileInit = () => {
+  // Initialize mobile features that depend on Router/context
   usePushNotifications();
   useDeepLinks();
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="ciftlik-ui-theme">
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-              <AppRoutes />
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
+  return null;
 };
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider defaultTheme="system" storageKey="ciftlik-ui-theme">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <MobileInit />
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
 
 const AppRoutes = () => {
   return (
