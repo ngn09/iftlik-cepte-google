@@ -13,7 +13,8 @@ interface UserTableProps {
   isLoading: boolean;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
-  isAdmin: boolean;
+  canManageUsers: boolean;
+  canUpdateRoles: boolean;
 }
 
 const UserTableSkeleton = () => (
@@ -41,7 +42,7 @@ const UserTableSkeleton = () => (
   </Table>
 );
 
-export function UserTable({ users, isLoading, onEdit, onDelete, isAdmin }: UserTableProps) {
+export function UserTable({ users, isLoading, onEdit, onDelete, canManageUsers, canUpdateRoles }: UserTableProps) {
   const { mutate: updateUserRole, isPending: isUpdatingRole } = useUpdateUserRole();
 
   const handleRoleChange = (userId: string, newRole: string) => {
@@ -58,7 +59,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete, isAdmin }: UserT
               <TableHead>E-posta</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Durum</TableHead>
-              {isAdmin && <TableHead className="text-right">İşlemler</TableHead>}
+              {canManageUsers && <TableHead className="text-right">İşlemler</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -67,7 +68,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete, isAdmin }: UserT
                 <TableCell className="font-medium">{user.full_name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  {isAdmin ? (
+                  {canUpdateRoles ? (
                     <Select
                       value={user.role}
                       onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
@@ -89,7 +90,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete, isAdmin }: UserT
                   )}
                 </TableCell>
                 <TableCell>{user.status}</TableCell>
-                {isAdmin && (
+                {canManageUsers && (
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>

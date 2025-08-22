@@ -7,19 +7,16 @@ import { useUsers } from "@/hooks/useUsers";
 import { UserTable } from "@/components/UserTable";
 import { DeleteUserDialog } from "@/components/DeleteUserDialog";
 import type { User } from "@/types/user";
-import { useAuth } from "@/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuthorization } from "@/hooks/useAuthorization";
 
 const Users = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const { profile } = useAuth();
   const { toast } = useToast();
-
-  const currentUserRole = 'Yönetici';
-  const isAdmin = currentUserRole === 'Yönetici';
+  const { isAdmin, canManageUsers, profile } = useAuthorization();
 
   const { users, isLoading, isError, error, deleteUser, isDeleting } = useUsers();
 
@@ -76,7 +73,7 @@ const Users = () => {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Kullanıcı Yönetimi</h1>
-        {isAdmin && (
+        {canManageUsers && (
           isLoading ? (
             <Skeleton className="h-10 w-36" />
           ) : (
@@ -88,7 +85,7 @@ const Users = () => {
         )}
       </div>
 
-      {profile?.farm_id && isAdmin && (
+      {profile?.farm_id && canManageUsers && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Ekibinizi Davet Edin</CardTitle>
@@ -113,7 +110,8 @@ const Users = () => {
         isLoading={isLoading} 
         onEdit={handleEditUser} 
         onDelete={handleDeleteRequest} 
-        isAdmin={isAdmin} 
+        canManageUsers={canManageUsers}
+        canUpdateRoles={isAdmin}
       />
       <ManageUserDialog user={userToEdit} open={isDialogOpen} onOpenChange={setIsDialogOpen} />
       <DeleteUserDialog 
