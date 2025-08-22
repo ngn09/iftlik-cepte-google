@@ -2,8 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { persistQueryClient } from "@tanstack/react-query-persist-client";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
+import { mobileStorage } from "./lib/mobileStorage";
 import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
 import Animals from "./pages/Animals";
@@ -34,7 +37,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const persister = createAsyncStoragePersister({ storage: localforage });
+const persister = createAsyncStoragePersister({ storage: mobileStorage });
 persistQueryClient({ queryClient, persister, maxAge: 1000 * 60 * 60 * 24 });
 
 const App = () => (
