@@ -6,10 +6,29 @@ import { Button } from '@/components/ui/button';
 import { useCameras } from '@/hooks/useCameras';
 import CameraSettingsDialog from '@/components/CameraSettingsDialog';
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthorization } from "@/hooks/useAuthorization";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 
 const Cameras = () => {
   const { cameras, isLoading } = useCameras();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const { isAdmin } = useAuthorization();
+
+  // Only admins can access cameras
+  if (!isAdmin) {
+    return (
+      <div className="max-w-2xl mx-auto mt-8">
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Erişim Engellendi</AlertTitle>
+          <AlertDescription>
+            Kamera görüntülerine erişmek için yönetici yetkisine sahip olmanız gerekir.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   const onlineCameras = cameras.filter(c => c.status === 'online').length;
   const offlineCameras = cameras.filter(c => c.status === 'offline').length;

@@ -10,6 +10,8 @@ import type { User } from "@/types/user";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthorization } from "@/hooks/useAuthorization";
+import { AuditLogTable } from "@/components/AuditLogTable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Users = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -105,14 +107,29 @@ const Users = () => {
         </Card>
       )}
 
-      <UserTable 
-        users={users} 
-        isLoading={isLoading} 
-        onEdit={handleEditUser} 
-        onDelete={handleDeleteRequest} 
-        canManageUsers={canManageUsers}
-        canUpdateRoles={isAdmin}
-      />
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="users">Kullanıcılar</TabsTrigger>
+          {isAdmin && <TabsTrigger value="audit">Denetim Kayıtları</TabsTrigger>}
+        </TabsList>
+        
+        <TabsContent value="users">
+          <UserTable 
+            users={users} 
+            isLoading={isLoading} 
+            onEdit={handleEditUser} 
+            onDelete={handleDeleteRequest} 
+            canManageUsers={canManageUsers}
+            canUpdateRoles={isAdmin}
+          />
+        </TabsContent>
+        
+        {isAdmin && (
+          <TabsContent value="audit">
+            <AuditLogTable />
+          </TabsContent>
+        )}
+      </Tabs>
       <ManageUserDialog user={userToEdit} open={isDialogOpen} onOpenChange={setIsDialogOpen} />
       <DeleteUserDialog 
         user={userToDelete}
