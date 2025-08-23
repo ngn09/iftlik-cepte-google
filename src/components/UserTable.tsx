@@ -67,7 +67,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete, canManageUsers, 
             {users?.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.full_name}</TableCell>
-                {isAdmin && <TableCell>{user.email}</TableCell>}
+                {isAdmin && <TableCell>{user.email || ''}</TableCell>}
                 <TableCell>
                   {canUpdateRoles ? (
                     <Select
