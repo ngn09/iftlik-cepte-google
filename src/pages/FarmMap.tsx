@@ -278,61 +278,59 @@ const FarmMap = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-800 mb-2">Çiftlik Haritası</h1>
-          <p className="text-slate-600">Interaktif çiftlik düzeni ve konumlandırma</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 relative">
+      {/* Toolbar - Top Right Corner */}
+      <div className="absolute top-6 right-6 z-10 flex items-center gap-3 bg-white rounded-2xl p-3 shadow-xl border">
+        <Button
+          variant={isEditMode ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setIsEditMode(!isEditMode)}
+          className="rounded-xl"
+        >
+          {isEditMode ? <Eye className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
+          {isEditMode ? 'Görünüm' : 'Düzenle'}
+        </Button>
         
-        {/* Toolbar */}
-        <div className="flex items-center gap-3 bg-white rounded-2xl p-3 shadow-xl border">
-          <Button
-            variant={isEditMode ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setIsEditMode(!isEditMode)}
-            className="rounded-xl"
-          >
-            {isEditMode ? <Eye className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
-            {isEditMode ? 'Görünüm' : 'Düzenle'}
-          </Button>
-          
-          {isEditMode && (
-            <>
-              <div className="w-px h-6 bg-slate-200" />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowGrid(!showGrid)}
-                className="rounded-xl"
-              >
-                <Grid3X3 className="h-4 w-4 mr-2" />
-                Grid
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLocations([])}
-                className="rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Temizle
-              </Button>
-            </>
-          )}
-          
-          <div className="w-px h-6 bg-slate-200" />
-          
-          <Button
-            onClick={() => openEditor()}
-            className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-            size="sm"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Konum Ekle
-          </Button>
-        </div>
+        {isEditMode && (
+          <>
+            <div className="w-px h-6 bg-slate-200" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowGrid(!showGrid)}
+              className="rounded-xl"
+            >
+              <Grid3X3 className="h-4 w-4 mr-2" />
+              Grid
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocations([])}
+              className="rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Temizle
+            </Button>
+          </>
+        )}
+        
+        <div className="w-px h-6 bg-slate-200" />
+        
+        <Button
+          onClick={() => openEditor()}
+          className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+          size="sm"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Konum Ekle
+        </Button>
+      </div>
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-slate-800 mb-2">Çiftlik Haritası</h1>
+        <p className="text-slate-600">Interaktif çiftlik düzeni ve konumlandırma</p>
       </div>
 
       {/* Stats Cards */}
