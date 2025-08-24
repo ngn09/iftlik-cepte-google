@@ -7,7 +7,7 @@ import type { User } from "@/types/user";
 
 const fetchUsers = async (isAdmin: boolean): Promise<User[]> => {
   if (isAdmin) {
-    // Admins get all fields including email
+    // Admins get all fields including email via direct table access
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, email, role, status, farm_id');
@@ -18,16 +18,14 @@ const fetchUsers = async (isAdmin: boolean): Promise<User[]> => {
     }
     return data || [];
   } else {
-    // Non-admins get limited fields without email
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, role, status, farm_id');
+    // Non-admins use secure RPC that excludes email addresses
+    const { data, error } = await supabase.rpc('get_farm_profiles_basic');
 
     if (error) {
       console.error("Error fetching users:", error);
       throw new Error(error.message);
     }
-    // Map to User type with email as undefined
+    // Map to User type with email as undefined for type safety
     return (data || []).map(user => ({ ...user, email: undefined }));
   }
 };

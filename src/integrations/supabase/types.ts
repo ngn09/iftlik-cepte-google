@@ -412,6 +412,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_farm_profiles_basic: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          farm_id: string
+          full_name: string
+          id: string
+          role: string
+          status: string
+        }[]
+      }
       is_farm_owner: {
         Args: { target_farm_id: string }
         Returns: boolean
